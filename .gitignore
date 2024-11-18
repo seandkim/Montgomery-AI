@@ -1,0 +1,6 @@
+*.jpg
+cifar10/*
+.DS_Store
+data/*
+
+models/*
