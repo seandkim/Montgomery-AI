@@ -6,6 +6,10 @@ import torch
 import matplotlib.pyplot as plt
 from PIL import Image
 
+# Sanity check to see if torch version (from https://github.com/facebookresearch/sam2/issues/344)
+
+torch.from_numpy(np.zeros((3, 1024, 1024), dtype=np.float32))
+
 # select the device for computation
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -76,7 +80,7 @@ def show_masks(image, masks, scores, point_coords=None, box_coords=None, input_l
         plt.show()
 
 
-image = Image.open('images/truck.png')
+image = Image.open('../images/truck.png')
 image = np.array(image.convert("RGB"))
 
 # plt.figure(figsize=(10, 10))
@@ -84,11 +88,11 @@ image = np.array(image.convert("RGB"))
 # plt.axis('on')
 # plt.show()
 
-from models.sam2.sam2.build_sam import build_sam2
-from models.sam2.sam2.sam2_image_predictor import SAM2ImagePredictor
+from sam2.build_sam import build_sam2
+from sam2.sam2_image_predictor import SAM2ImagePredictor
 
-sam2_checkpoint = "models/sam2/checkpoints/sam2.1_hiera_large.pt"
-model_cfg = "sam2.1_hiera_l.yaml"
+sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
+model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
 
@@ -99,9 +103,24 @@ predictor.set_image(image)
 input_point = np.array([[500, 375]])
 input_label = np.array([1])
 
-plt.figure(figsize=(10, 10))
-plt.imshow(image)
-show_points(input_point, input_label, plt.gca())
-plt.axis('on')
-plt.show()  
+# plt.figure(figsize=(10, 10))
+# plt.imshow(image)
+# show_points(input_point, input_label, plt.gca())
+# plt.axis('on')
+# plt.show()  
 
+print(predictor._features["image_embed"].shape, predictor._features["image_embed"][-1].shape)
+
+masks, scores, logits = predictor.predict(
+    point_coords=input_point,
+    point_labels=input_label,
+    multimask_output=True,
+)
+sorted_ind = np.argsort(scores)[::-1]
+masks = masks[sorted_ind]
+scores = scores[sorted_ind]
+logits = logits[sorted_ind]
+
+# masks.shape  # (number_of_masks) x H x W
+
+show_masks(image, masks, scores, point_coords=input_point, input_labels=input_label, borders=True)
