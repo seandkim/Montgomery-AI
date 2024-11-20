@@ -1,4 +1,4 @@
-name: hendraix
+name: montgomery
 channels:
   - pytorch
   - defaults
@@ -79,4 +79,4 @@ dependencies:
       - sympy==1.13.1
       - torchvision==0.20.1
       - tqdm==4.67.0
-prefix: /opt/anaconda3/envs/hendraix
+prefix: /opt/anaconda3/envs/montgomery

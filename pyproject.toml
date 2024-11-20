@@ -1,7 +1,7 @@
 [project]
-name = "hendraix"
+name = "Montgomery"
 version = "0.1.0"
-description = "A project to demonstrate imports across submodules"
+description = ""
 
 [build-system]
 requires = [
