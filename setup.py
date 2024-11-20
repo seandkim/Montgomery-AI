@@ -3,18 +3,14 @@ from setuptools import setup, find_packages
 setup(
   name='hendraix',
   version='0.1.0',
-  packages=find_packages(where='src') + find_packages(where='models'),
-  package_dir={
-    '': 'src',
-    'sam': 'models/sam'
-  },  
+  package_dir={"": "src"},
+  packages=find_packages(where="src"),
   install_requires=[
-    # Add your project's dependencies here TODO
     # e.g., 'numpy', 'requests',
   ],
   entry_points={
     'console_scripts': [
-        'my_command = hendraix.main:main', 
+        'my_command = hendraix.main:main',
     ],
   },
   author='Sean Kim',
