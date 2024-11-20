@@ -2,6 +2,7 @@
 cifar10/*
 .DS_Store
 data/*
+build/
 
 src/models/*
 **/*.egg-info/*

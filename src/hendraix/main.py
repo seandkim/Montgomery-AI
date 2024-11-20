@@ -33,7 +33,6 @@ elif device.type == "mps":
         "See e.g. https://github.com/pytorch/pytorch/issues/84936 for a discussion."
     )
 
-
 np.random.seed(3)
 
 def show_mask(mask, ax, random_color=False, borders = True):
@@ -87,11 +86,11 @@ image = np.array(image.convert("RGB"))
 # plt.axis('on')
 # plt.show()
 
-from sam.sam2.build_sam import build_sam2
-from sam.sam2.sam2_image_predictor import SAM2ImagePredictor
+from sam2.build_sam import build_sam2
+from sam2.sam2_image_predictor import SAM2ImagePredictor
 
-sam2_checkpoint = "models/sam2/checkpoints/sam2.1_hiera_large.pt"
-model_cfg = "models/sam2/sam2/configs/sam2.1/sam2.1_hiera_l.yaml"
+sam2_checkpoint = "src/models/sam2/checkpoints/sam2.1_hiera_large.pt"
+model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
 
