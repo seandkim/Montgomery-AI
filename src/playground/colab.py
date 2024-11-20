@@ -1,6 +1,9 @@
+# https://colab.research.google.com/github/facebookresearch/sam2/blob/main/notebooks/image_predictor_example.ipynb#scrollTo=226df881
+
 import os
 # if using Apple MPS, fall back to CPU for unsupported ops
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
