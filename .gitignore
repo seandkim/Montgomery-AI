@@ -4,5 +4,5 @@ cifar10/*
 data/*
 
 src/models/*
-*/*.egg-info/*
+**/*.egg-info/*
 *.pyc

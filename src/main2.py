@@ -87,8 +87,8 @@ image = np.array(image.convert("RGB"))
 # plt.axis('on')
 # plt.show()
 
-from models.sam2.build_sam import build_sam2
-from models.sam2.sam2_image_predictor import SAM2ImagePredictor
+from models.sam.build_sam import build_sam2
+from models.sam.sam2_image_predictor import SAM2ImagePredictor
 
 sam2_checkpoint = "models/sam2/checkpoints/sam2.1_hiera_large.pt"
 model_cfg = "models/sam2/sam2/configs/sam2.1/sam2.1_hiera_l.yaml"

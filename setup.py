@@ -3,8 +3,11 @@ from setuptools import setup, find_packages
 setup(
   name='hendraix',
   version='0.1.0',
-  packages=find_packages(where='src'),
-  package_dir={'': 'src'},
+  packages=find_packages(where='src') + find_packages(where='models'),
+  package_dir={
+    '': 'src',
+    'sam': 'models/sam'
+  },  
   install_requires=[
     # Add your project's dependencies here TODO
     # e.g., 'numpy', 'requests',
