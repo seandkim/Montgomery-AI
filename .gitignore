@@ -3,4 +3,6 @@ cifar10/*
 .DS_Store
 data/*
 
-models/*
+src/models/*
+*/*.egg-info/*
+*.pyc
