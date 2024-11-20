@@ -79,8 +79,7 @@ def show_masks(image, masks, scores, point_coords=None, box_coords=None, input_l
         plt.axis('off')
         plt.show()
 
-
-image = Image.open('../images/truck.png')
+image = Image.open('./images/raw/guitar.png')
 image = np.array(image.convert("RGB"))
 
 # plt.figure(figsize=(10, 10))
@@ -91,8 +90,8 @@ image = np.array(image.convert("RGB"))
 from sam2.build_sam import build_sam2
 from sam2.sam2_image_predictor import SAM2ImagePredictor
 
-sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
-model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
+sam2_checkpoint = "models/sam2/checkpoints/sam2.1_hiera_large.pt"
+model_cfg = "models/sam2/sam2/configs/sam2.1/sam2.1_hiera_l.yaml"
 
 sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
 
@@ -100,14 +99,14 @@ predictor = SAM2ImagePredictor(sam2_model)
 
 predictor.set_image(image)
 
-input_point = np.array([[500, 375]])
+input_point = np.array([[1600, 200]])
 input_label = np.array([1])
 
 # plt.figure(figsize=(10, 10))
 # plt.imshow(image)
 # show_points(input_point, input_label, plt.gca())
 # plt.axis('on')
-# plt.show()  
+# plt.show()
 
 print(predictor._features["image_embed"].shape, predictor._features["image_embed"][-1].shape)
 
