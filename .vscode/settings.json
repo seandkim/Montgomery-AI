@@ -1,6 +1,5 @@
 {
   "editor.inlineSuggest.enabled": false,
-  "python.analysis.extraPaths": [
-    "/Users/seandkim/projects/ai/sam2"
-  ]
+  "python.analysis.extraPaths": ["/Users/seandkim/projects/ai/sam2"],
+  "editor.formatOnSave": true
 }

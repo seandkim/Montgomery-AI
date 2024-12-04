@@ -14,48 +14,85 @@ from .helper import *
 sam2_checkpoint = "src/models/sam2/checkpoints/sam2.1_hiera_large.pt"
 model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
-#region show function
+
+# region show function
 def show_image(image: np.array):
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
-    plt.axis('on')
+    plt.axis("on")
     plt.show()
+
 
 def show_image(image: np.array, input_points: np.array):
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
     show_points(input_point, input_label, plt.gca())
-    plt.axis('on')
+    plt.axis("on")
     plt.show()
 
-def show_mask(mask, ax, random_color=False, borders = True):
+
+def show_mask(mask, ax, random_color=False, borders=True):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
     else:
-        color = np.array([30/255, 144/255, 255/255, 0.6])
+        color = np.array([30 / 255, 144 / 255, 255 / 255, 0.6])
     h, w = mask.shape[-2:]
     mask = mask.astype(np.uint8)
-    mask_image =  mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
+    mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
     if borders:
         import cv2
-        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) 
+
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         # Try to smooth contours
-        contours = [cv2.approxPolyDP(contour, epsilon=0.01, closed=True) for contour in contours]
-        mask_image = cv2.drawContours(mask_image, contours, -1, (1, 1, 1, 0.5), thickness=2) 
+        contours = [
+            cv2.approxPolyDP(contour, epsilon=0.01, closed=True) for contour in contours
+        ]
+        mask_image = cv2.drawContours(
+            mask_image, contours, -1, (1, 1, 1, 0.5), thickness=2
+        )
     ax.imshow(mask_image)
 
+
 def show_points(coords, labels, ax, marker_size=375):
-    pos_points = coords[labels==1]
-    neg_points = coords[labels==0]
-    ax.scatter(pos_points[:, 0], pos_points[:, 1], color='green', marker='*', s=marker_size, edgecolor='white', linewidth=1.25)
-    ax.scatter(neg_points[:, 0], neg_points[:, 1], color='red', marker='*', s=marker_size, edgecolor='white', linewidth=1.25)   
+    pos_points = coords[labels == 1]
+    neg_points = coords[labels == 0]
+    ax.scatter(
+        pos_points[:, 0],
+        pos_points[:, 1],
+        color="green",
+        marker="*",
+        s=marker_size,
+        edgecolor="white",
+        linewidth=1.25,
+    )
+    ax.scatter(
+        neg_points[:, 0],
+        neg_points[:, 1],
+        color="red",
+        marker="*",
+        s=marker_size,
+        edgecolor="white",
+        linewidth=1.25,
+    )
+
 
 def show_box(box, ax):
     x0, y0 = box[0], box[1]
     w, h = box[2] - box[0], box[3] - box[1]
-    ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0, 0, 0, 0), lw=2))    
+    ax.add_patch(
+        plt.Rectangle((x0, y0), w, h, edgecolor="green", facecolor=(0, 0, 0, 0), lw=2)
+    )
 
-def show_masks(image, masks, scores, point_coords=None, box_coords=None, input_labels=None, borders=True):
+
+def show_masks(
+    image,
+    masks,
+    scores,
+    point_coords=None,
+    box_coords=None,
+    input_labels=None,
+    borders=True,
+):
     for i, (mask, score) in enumerate(zip(masks, scores)):
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
@@ -68,9 +105,12 @@ def show_masks(image, masks, scores, point_coords=None, box_coords=None, input_l
             show_box(box_coords, plt.gca())
         if len(scores) > 1:
             plt.title(f"Mask {i+1}, Score: {score:.3f}", fontsize=18)
-        plt.axis('off')
+        plt.axis("off")
         plt.show()
-#endregion
+
+
+# endregion
+
 
 class SAM2Result:
     def __init__(self, masks: np.array, scores: np.array, logits: np.array):
@@ -81,13 +121,17 @@ class SAM2Result:
     def __repr__(self):
         return f"SAM2Result(masks_shape={self.masks.shape}, scores_shape={self.scores.shape}, logits_shape={self.logits.shape})"
 
+
 # Returns result in the decreasing score
 def run_sam2(device: torch.device, image, input_point, input_label) -> SAM2Result:
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     predictor = SAM2ImagePredictor(sam2_model)
     predictor.set_image(image)
 
-    print_verbose(predictor._features["image_embed"].shape, predictor._features["image_embed"][-1].shape)
+    print_verbose(
+        predictor._features["image_embed"].shape,
+        predictor._features["image_embed"][-1].shape,
+    )
 
     masks, scores, logits = predictor.predict(
         point_coords=input_point,
@@ -103,13 +147,21 @@ def run_sam2(device: torch.device, image, input_point, input_label) -> SAM2Resul
     # masks.shape # (number_of_masks) x H x W
     return SAM2Result(masks, scores, logits)
 
+
 if __name__ == "__main__":
     device = setup_torch_device()
 
-    image = Image.open('./images/raw/guitar.png')
+    image = Image.open("./images/raw/guitar.png")
     image = np.array(image.convert("RGB"))
     input_point = np.array([[1600, 200]])
     input_label = np.array([1])
     sam2result = run_sam2(device, image, input_point, input_label)
 
-    show_masks(image, sam2result.masks, sam2result.scores, point_coords=input_point, input_labels=input_label, borders=True)
+    show_masks(
+        image,
+        sam2result.masks,
+        sam2result.scores,
+        point_coords=input_point,
+        input_labels=input_label,
+        borders=True,
+    )
