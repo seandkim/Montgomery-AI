@@ -1,6 +1,5 @@
 # https://colab.research.google.com/github/facebookresearch/sam2/blob/main/notebooks/image_predictor_example.ipynb#scrollTo=226df881
 
-import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt

@@ -1,5 +1,8 @@
 {
   "editor.inlineSuggest.enabled": false,
-  "python.analysis.extraPaths": ["/Users/seandkim/projects/ai/sam2"],
+  "python.analysis.extraPaths": [
+    "/Users/seandkim/projects/ai/sam2",
+    "/opt/anaconda3/envs/montgomery/lib/python3.12/site-packages/mediapipe"
+  ],
   "editor.formatOnSave": true
 }
