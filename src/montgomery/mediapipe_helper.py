@@ -34,11 +34,13 @@ def initialize_mp_hands(min_confidence: float = 0.5) -> Hands:
     )
 
 
-def run_mp_hands(hands: Hands, image_original) -> Optional[List[MpHandResult]]:
-    image = cv2.flip(image_original, 1)
-    # BGR => RGB, flip for correct handedness
-    image_processed = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    results = hands.process(image_processed)
+def run_mp_hands(
+    hands: Hands, image_original: np.ndarray, is_bgr: bool = False
+) -> Optional[List[MpHandResult]]:
+    image = cv2.flip(image_original, 1)  # flip y-axis for correct handedness
+    if is_bgr:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = hands.process(image)
 
     # Print handedness and draw hand landmarks on the image.
     print_verbose("Handedness:", results.multi_handedness)
@@ -98,7 +100,7 @@ if __name__ == "__main__":
         base, ext = file.rsplit(".", 1)
         min_confidence = 0.1
         with initialize_mp_hands(min_confidence=min_confidence) as hands:
-            mp_hand_results = run_mp_hands(hands, image_original)
+            mp_hand_results = run_mp_hands(hands, image_original, is_bgr=True)
             if mp_hand_results == None:
                 print_verbose(
                     f"hands not detected: file={file}, min_confidence={min_confidence}"

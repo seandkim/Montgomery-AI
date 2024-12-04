@@ -6,7 +6,7 @@
       "type": "python",
       "request": "launch",
       // "module": "montgomery.main",
-      "module": "montgomery.mediapipe_helper",
+      "module": "montgomery.main",
       // "module": "playground.colab",
       "justMyCode": false,
       "env": {

@@ -1,5 +1,6 @@
 # https://colab.research.google.com/github/facebookresearch/sam2/blob/main/notebooks/image_predictor_example.ipynb#scrollTo=226df881
 
+from typing import Optional
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -15,17 +16,15 @@ model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 
 # region show function
-def show_image(image: np.array):
+def show_image(
+    image: np.array,
+    input_points: Optional[np.ndarray] = None,
+    input_label: Optional[np.ndarray] = None,
+):
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
-    plt.axis("on")
-    plt.show()
-
-
-def show_image(image: np.array, input_points: np.array):
-    plt.figure(figsize=(10, 10))
-    plt.imshow(image)
-    show_points(input_point, input_label, plt.gca())
+    if input_points is not None and input_label is not None:
+        show_points(input_points, input_label, plt.gca())
     plt.axis("on")
     plt.show()
 
@@ -91,6 +90,7 @@ def show_masks(
     box_coords=None,
     input_labels=None,
     borders=True,
+    block=False,
 ):
     for i, (mask, score) in enumerate(zip(masks, scores)):
         plt.figure(figsize=(10, 10))
@@ -105,7 +105,7 @@ def show_masks(
         if len(scores) > 1:
             plt.title(f"Mask {i+1}, Score: {score:.3f}", fontsize=18)
         plt.axis("off")
-        plt.show()
+        plt.show(block=block)
 
 
 # endregion
@@ -122,7 +122,12 @@ class SAM2Result:
 
 
 # Returns result in the decreasing score
-def run_sam2(device: torch.device, image, input_point, input_label) -> SAM2Result:
+def run_sam2(
+    device: torch.device,
+    image: np.ndarray,
+    input_point: np.ndarray,
+    input_label: np.ndarray,
+) -> SAM2Result:
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     predictor = SAM2ImagePredictor(sam2_model)
     predictor.set_image(image)
