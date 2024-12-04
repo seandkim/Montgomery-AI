@@ -5,8 +5,14 @@
       "name": "Python: Module",
       "type": "python",
       "request": "launch",
-      "module": "playground.mediapipe",
-      "justMyCode": false
+      // "module": "montgomery.main",
+      "module": "montgomery.colab_helper",
+      // "module": "playground.colab",
+      "justMyCode": false,
+      "env": {
+        "PYTHON_VERBOSE_MODE": "true",
+        "PYTORCH_ENABLE_MPS_FALLBACK": "1"
+      }
     }
   ]
 }
