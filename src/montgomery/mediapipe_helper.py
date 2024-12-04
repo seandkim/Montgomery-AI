@@ -31,20 +31,18 @@ def initialize_mp_hands() -> Hands:
     )
 
 
-def calculate_multi_hand_landmarks(
-    hands: Hands, image_original
-) -> List:  # -> List[MpHandResult]:
+def run_mp_hands(hands: Hands, image_original) -> List[MpHandResult]:
     image = cv2.flip(image_original, 1)
     # BGR => RGB, flip for correct handedness
-    processed = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    results = hands.process(processed)
+    image_processed = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = hands.process(image_processed)
 
     # Print handedness and draw hand landmarks on the image.
     print_verbose("Handedness:", results.multi_handedness)
     if not results.multi_hand_landmarks:
         return
 
-    # mp_hand_result = []
+    mp_hand_result = []
     for idx in range(len(results.multi_handedness)):
         if VERBOSE:
             hand_landmarks = results.multi_hand_landmarks[idx]
@@ -56,23 +54,23 @@ def calculate_multi_hand_landmarks(
                 f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})",
             )
 
-        # mp_hand_result.append(
-        #     MpHandResult(
-        #         results.multi_hand_world_landmarks[idx],
-        #         results.multi_hand_landmarks[idx],
-        #         results.multi_handedness[idx],
-        #     )
-        # )
+        mp_hand_result.append(
+            MpHandResult(
+                results.multi_hand_world_landmarks[idx],
+                results.multi_hand_landmarks[idx],
+                results.multi_handedness[idx],
+            )
+        )
 
-    return results
+    return mp_hand_result
 
 
-def annotate_hand_landmark(image: np.array, mp_hand_result: MpHandResult) -> np.array:
+def annotate_mp_hand_result(image: np.array, mp_hand_result: MpHandResult) -> np.array:
     annotated_image = cv2.flip(image, 1).copy()
 
     mp_drawing.draw_landmarks(
         annotated_image,
-        mp_hand_result,
+        mp_hand_result.landmarks_normalized,
         mp_hands.HAND_CONNECTIONS,
         mp_drawing_styles.get_default_hand_landmarks_style(),
         mp_drawing_styles.get_default_hand_connections_style(),
@@ -94,9 +92,11 @@ if __name__ == "__main__":
         image_original = cv2.imread(f"{INPUT_DIR}/{file}")
         base, ext = file.rsplit(".", 1)
         with initialize_mp_hands() as hands:
-            mp_hand_results = calculate_multi_hand_landmarks(hands, image_original)
-            for idx, landmarks in enumerate(mp_hand_results.multi_hand_landmarks):
-                annotated_image = annotate_hand_landmark(image_original, landmarks)
+            mp_hand_results = run_mp_hands(hands, image_original)
+            for idx, mp_hand_result in enumerate(mp_hand_results):
+                annotated_image = annotate_mp_hand_result(
+                    image_original, mp_hand_result
+                )
                 cv2.imwrite(
                     f"{OUTPUT_DIR}/mediapipe_{base}_{idx}.{ext}", annotated_image
                 )
