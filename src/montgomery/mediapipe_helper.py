@@ -21,9 +21,11 @@ class MpHandResult:
         landmarks_normalized=landmark_pb2.NormalizedLandmarkList,
         handedness=classification_pb2.ClassificationList,
     ):
-        self.landmarks = landmarks
-        self.landmarks_normalized = landmarks_normalized
-        self.handedness = handedness
+        self.landmarks: landmark_pb2.LandmarkList = landmarks
+        self.landmarks_normalized: landmark_pb2.NormalizedLandmarkList = (
+            landmarks_normalized
+        )
+        self.handedness: classification_pb2.ClassificationList = handedness
 
 
 def initialize_mp_hands(min_confidence: float = 0.5) -> Hands:

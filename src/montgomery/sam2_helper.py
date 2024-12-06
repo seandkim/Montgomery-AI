@@ -16,17 +16,17 @@ model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 
 class SAM2MaskResult:
-    def __init__(self, mask: np.array, score: np.float32, logit: np.array):
-        self.mask = mask
-        self.score = score
-        self.logit = logit
+    def __init__(self, mask: np.ndarray, score: np.float32, logit: np.ndarray):
+        self.mask: np.ndarray = mask
+        self.score: np.float32 = score
+        self.logit: np.ndarray = logit
 
     def __repr__(self):
         return f"SAM2Result(masks_shape={self.mask.shape}, scores={self.score:.2f}, logits_shape={self.logit.shape})"
 
 
 # region show function
-def show_image(
+def show_image_with_input_point(
     image: np.array,
     input_points: Optional[np.ndarray] = None,
     input_label: Optional[np.ndarray] = None,
