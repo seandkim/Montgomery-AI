@@ -13,19 +13,21 @@ from .helper import print_verbose, show_image
 from .sam2_helper import SAM2MaskResult
 
 
-def run_canny_convolution(image_rgb: np.ndarray) -> np.ndarray:
-    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 1.4)
-    edges = cv2.Canny(blurred, 100, 200)
+def run_canny_edge(image_rgb: np.ndarray, blur=False, show_image=False) -> np.ndarray:
+    result = image_rgb.copy()
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2GRAY)
+    if blur:
+        result = cv2.GaussianBlur(result, (5, 5), 1.4)
+    result = cv2.Canny(result, 100, 200)
 
-    # Display the results
-    plt.subplot(121), plt.imshow(image_rgb, cmap="gray")
-    plt.title("Original Image"), plt.xticks([]), plt.yticks([])
-    plt.subplot(122), plt.imshow(edges, cmap="gray")
-    plt.title("Canny Edges"), plt.xticks([]), plt.yticks([])
-    plt.show(block=True)
+    if show_image:
+        plt.subplot(121), plt.imshow(image_rgb, cmap="gray")
+        plt.title("Original Image"), plt.xticks([]), plt.yticks([])
+        plt.subplot(122), plt.imshow(result, cmap="gray")
+        plt.title("Canny Edges"), plt.xticks([]), plt.yticks([])
+        plt.show(block=True)
 
-    return edges
+    return result
 
 
 # region fretboard
@@ -36,10 +38,10 @@ def get_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2MaskRes
     return mask_results[1]
 
 
-def get_fretboard_as_image(image_rgb: np.ndarray, show_mask_result=False) -> np.ndarray:
+def get_fretboard_as_image(image_rgb: np.ndarray, show_image=False) -> np.ndarray:
     device = helper.setup_torch_device()
     mask_results = sam2_helper.run_sam2(device, image_rgb, input_point, input_label)
-    if show_mask_result:
+    if show_image:
         sam2_helper.show_mask(
             annotated_image,
             mask_results,
@@ -50,8 +52,9 @@ def get_fretboard_as_image(image_rgb: np.ndarray, show_mask_result=False) -> np.
         )
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(mask_results)
     fretboard_cropped = helper.crop_with_mask(image_rgb, fretboard_mask_result.mask)
-    show_image(fretboard_cropped)
-    run_canny_convolution(fretboard_cropped)
+    if show_image:
+        show_image(fretboard_cropped)
+    run_canny_edge(fretboard_cropped, blur=False, show_image=True)
     return image_rgb
 
 
@@ -68,8 +71,7 @@ if __name__ == "__main__":
     input_label = np.array([1])
 
     fretboard_image: np.ndarray = get_fretboard_as_image(image_rgb)
-    canny_result = run_canny_convolution(image_rgb)
-    # run_canny_convolution(fretboard_mask_result.mask)
+    canny_result = run_canny_edge(image_rgb)
 
     min_confidence = 0.1
     with mp_helper.initialize_mp_hands(min_confidence=min_confidence) as hands:
