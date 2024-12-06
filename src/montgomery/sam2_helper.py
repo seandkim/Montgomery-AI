@@ -1,6 +1,6 @@
 # https://colab.research.google.com/github/facebookresearch/sam2/blob/main/notebooks/image_predictor_example.ipynb#scrollTo=226df881
 
-from typing import Optional
+from typing import List, Optional
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -13,6 +13,16 @@ from .helper import *
 
 sam2_checkpoint = "src/models/sam2/checkpoints/sam2.1_hiera_large.pt"
 model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
+
+
+class SAM2MaskResult:
+    def __init__(self, mask: np.array, score: np.float32, logit: np.array):
+        self.mask = mask
+        self.score = score
+        self.logit = logit
+
+    def __repr__(self):
+        return f"SAM2Result(masks_shape={self.mask.shape}, scores={self.score:.2f}, logits_shape={self.logit.shape})"
 
 
 # region show function
@@ -29,7 +39,7 @@ def show_image(
     plt.show()
 
 
-def show_mask(mask, ax, random_color=False, borders=True):
+def show_mask_helper(mask, ax, random_color=False, borders=True):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
     else:
@@ -82,27 +92,56 @@ def show_box(box, ax):
     )
 
 
-def show_masks(
-    image,
-    masks,
-    scores,
+def show_mask(
+    image: np.array,
+    mask_result: SAM2MaskResult,
     point_coords=None,
     box_coords=None,
     input_labels=None,
     borders=True,
     block=False,
 ):
-    for i, (mask, score) in enumerate(zip(masks, scores)):
+    mask = mask_result.mask
+    score = mask_result.score
+
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image)
+    show_mask_helper(mask, plt.gca(), borders=borders)
+    if point_coords is not None:
+        assert input_labels is not None
+        show_points(point_coords, input_labels, plt.gca())
+    if box_coords is not None:
+        # boxes
+        show_box(box_coords, plt.gca())
+
+    plt.title(f"Score: {score:.3f}", fontsize=18)
+    plt.axis("off")
+    plt.show(block=block)
+
+
+def show_masks(
+    image: np.array,
+    mask_results: List[SAM2MaskResult],
+    point_coords=None,
+    box_coords=None,
+    input_labels=None,
+    borders=True,
+    block=False,
+):
+    for i in range(len(mask_results)):
+        mask = mask_results[i].mask
+        score = mask_results[i].score
+
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
-        show_mask(mask, plt.gca(), borders=borders)
+        show_mask_helper(mask, plt.gca(), borders=borders)
         if point_coords is not None:
             assert input_labels is not None
             show_points(point_coords, input_labels, plt.gca())
         if box_coords is not None:
             # boxes
             show_box(box_coords, plt.gca())
-        if len(scores) > 1:
+        if len(mask_results) > 1:
             plt.title(f"Mask {i+1}, Score: {score:.3f}", fontsize=18)
         plt.axis("off")
         plt.show(block=block)
@@ -111,23 +150,13 @@ def show_masks(
 # endregion
 
 
-class SAM2Result:
-    def __init__(self, masks: np.array, scores: np.array, logits: np.array):
-        self.masks = masks
-        self.scores = scores
-        self.logits = logits
-
-    def __repr__(self):
-        return f"SAM2Result(masks_shape={self.masks.shape}, scores_shape={self.scores.shape}, logits_shape={self.logits.shape})"
-
-
 # Returns result in the decreasing score
 def run_sam2(
     device: torch.device,
     image: np.ndarray,
     input_point: np.ndarray,
     input_label: np.ndarray,
-) -> SAM2Result:
+) -> SAM2MaskResult:
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     predictor = SAM2ImagePredictor(sam2_model)
     predictor.set_image(image)
@@ -148,8 +177,11 @@ def run_sam2(
     scores = scores[sorted_ind]
     logits = logits[sorted_ind]
 
-    # masks.shape # (number_of_masks) x H x W
-    return SAM2Result(masks, scores, logits)
+    mask_results = []
+    for idx in range(len(masks)):
+        mask_results.append(SAM2MaskResult(masks[idx], scores[idx], logits[idx]))
+
+    return mask_results
 
 
 if __name__ == "__main__":

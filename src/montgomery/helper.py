@@ -2,17 +2,21 @@ import os
 import torch
 import numpy as np
 
-#region verbose
+# region verbose
 VERBOSE = False
-def print_verbose(*args, **kwargs):
-  if VERBOSE:
-    print(args, kwargs)
 
-VERBOSE = os.environ.get('PYTHON_VERBOSE_MODE')
+
+def print_verbose(*args, **kwargs):
+    if VERBOSE:
+        print(args, kwargs)
+
+
+VERBOSE = os.environ.get("PYTHON_VERBOSE_MODE")
 if VERBOSE is not None and VERBOSE.lower() == "true":
-  VERBOSE = True
-  print("VERBOSE mode is enabled")
-#endregion
+    VERBOSE = True
+    print("VERBOSE mode is enabled")
+# endregion
+
 
 def setup_torch_device() -> torch.device:
     # if using Apple MPS, fall back to CPU for unsupported ops
@@ -40,5 +44,5 @@ def setup_torch_device() -> torch.device:
             "give numerically different outputs and sometimes degraded performance on MPS. "
             "See e.g. https://github.com/pytorch/pytorch/issues/84936 for a discussion."
         )
-    np.random.seed(3) 
+    np.random.seed(3)
     return device
