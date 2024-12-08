@@ -35,6 +35,16 @@ class HandResult:
         self.image_height = image_height
         self.image_width = image_width
 
+    # returns points of fingertips for thumb, index, ..., pink
+    def tips(self) -> List[Point]:
+        return [
+            self.landmarks[mp_hands.HandLandmark.THUMB_TIP],
+            self.landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP],
+            self.landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP],
+            self.landmarks[mp_hands.HandLandmark.RING_FINGER_TIP],
+            self.landmarks[mp_hands.HandLandmark.PINKY_TIP],
+        ]
+
     # from mediapipe result
     def from_mediapipe_result(
         handedness_mp: classification_pb2.Classification,

@@ -35,37 +35,46 @@ def run_canny_edge(image_rgb: np.ndarray, blur=False, show_image=False) -> np.nd
 
 
 def select_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2MaskResult:
-    # TODO: implement
-    return mask_results[1]
+    best_mask_result, best_score = None, -1
+    for mask_result in mask_results:
+        score = helper.rectangularity_score(mask_result.mask)
+        # print_verbose(score)
+        if score > best_score:
+            best_mask_result, best_score = mask_result, score
+    return best_mask_result
 
 
 def get_fretboard_mask_result(
-    image_rgb: np.ndarray, show_image=False
+    image_rgb: np.ndarray, show_all_masks=False, ignore_not_found=False
 ) -> SAM2MaskResult:
     device = helper.setup_torch_device()
     mask_results = sam2_helper.run_sam2(device, image_rgb, input_point, input_label)
-    if show_image:
-        sam2_helper.show_mask(
-            image_rgb,
-            mask_results,
-            point_coords=input_point,
-            input_labels=input_label,
-            borders=True,
-            block=True,
-        )
+    if ignore_not_found and (mask_results is None or len(mask_results) == 0):
+        raise RuntimeError("Mask results not found")
+    if show_all_masks:
+        for mask_result in mask_results:
+            sam2_helper.show_mask(
+                image_rgb,
+                mask_result,
+                point_coords=input_point,
+                input_labels=input_label,
+                borders=True,
+                block=True,
+            )
     return select_fretboard_mask_result(mask_results)
 
 
 # endregion
 
 
-def get_hand_result(image_rgb: np.ndarray, save_image=False) -> mp_helper.HandResult:
+def get_hand_result(
+    image_rgb: np.ndarray, save_image=False, ignore_not_found=False
+) -> mp_helper.HandResult:
     min_confidence = 0.1
     with mp_helper.initialize_mp_hands(min_confidence=min_confidence) as hands:
         hand_results = mp_helper.run_mp_hands(hands, image_rgb)
-        if len(hand_results) == 0:
-            print_verbose(f"hands not detected")
-            exit
+        if ignore_not_found and (hand_results is None or len(hand_results) == 0):
+            raise RuntimeError("Hand results not found")
 
         for hand_result in hand_results:
             if hand_result.handedness == Handedness.LEFT:
@@ -76,14 +85,18 @@ def get_hand_result(image_rgb: np.ndarray, save_image=False) -> mp_helper.HandRe
 if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
-    file = "./images/raw/guitar.png"
+    # file = "./images/raw/guitar.png"
+    file = "./images/raw/sweetchild/1.png"
     image_bgr = Image.open(file)
     image_rgb = np.array(image_bgr.convert("RGB"))
-    input_point = np.array([[1600, 200]])
+    # input_point = np.array([[1600, 200]])
+    input_point = np.array([[2670, 558]])
     input_label = np.array([1])
 
-    fretboard_mask_result = get_fretboard_mask_result(image_rgb)
-    hand_result = get_hand_result(image_rgb)
+    fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
+        image_rgb, show_all_masks=False
+    )
+    hand_result: HandResult = get_hand_result(image_rgb)
 
     angle_to_rotate_ccw = fretboard_mask_result.get_angle_from_positive_x_axis() - 90
     image_rotated = helper.rotate_ccw(
@@ -96,4 +109,4 @@ if __name__ == "__main__":
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
 
     canny_result = run_canny_edge(image_rotated_masked)
-    helper.show_image_with_point(canny_result, hand_rotated.landmarks)
+    helper.show_image_with_point(canny_result, hand_rotated.tips())

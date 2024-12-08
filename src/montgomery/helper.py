@@ -155,3 +155,34 @@ def rotate_ccw(
 #     if show_image:
 #         show_image(masked, gray=True)
 #     return masked
+
+
+# Created by ChatGPT
+def rectangularity_score(mask: np.ndarray):
+    """
+    Compute how close the shape in a binary mask is to a rectangle.
+    mask: 2D np.array (0 and 1 values), shape (H, W)
+    Returns a float (0 < score <= 1), where 1 = perfect rectangle
+    """
+    # Convert mask to uint8 image
+    mask_u8 = (mask * 255).astype(np.uint8)
+    # Find contours
+    contours, _ = cv2.findContours(mask_u8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) == 0:
+        return 0.0  # No shape found
+    # Assume the largest contour represents the shape
+    cnt = max(contours, key=cv2.contourArea)
+    # Compute area of the shape
+    area = cv2.contourArea(cnt)
+    if area == 0:
+        return 0.0
+    # Compute the minimum area bounding rectangle
+    rect = cv2.minAreaRect(cnt)  # rect = ((cx, cy), (width, height), angle)
+    (width, height) = rect[1]
+    # If width or height is zero, shape can't be formed
+    if width == 0 or height == 0:
+        return 0.0
+    rect_area = width * height
+    # Compute the rectangularity score
+    score = area / rect_area
+    return score

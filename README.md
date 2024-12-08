@@ -25,6 +25,7 @@ Modules
 
 ## Test videos
 
+- Sweet Child O mine - https://www.youtube.com/watch?v=WW_iOXWCGLE
 - Days of Wine and Roses - https://www.youtube.com/watch?v=ZhvLAKEPdW8
 - Little Wing - https://www.youtube.com/watch?v=ejqPg_i-r9o
 - Have you heard - https://www.youtube.com/watch?v=2M4CwTEny0Q

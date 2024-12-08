@@ -170,7 +170,8 @@ def run_sam2(
     image: np.ndarray,
     input_point: np.ndarray,
     input_label: np.ndarray,
-) -> SAM2MaskResult:
+    min_score_threshold: float = 0.1,
+) -> List[SAM2MaskResult]:
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     predictor = SAM2ImagePredictor(sam2_model)
     predictor.set_image(image)
@@ -193,7 +194,8 @@ def run_sam2(
 
     mask_results = []
     for idx in range(len(masks)):
-        mask_results.append(SAM2MaskResult(masks[idx], scores[idx], logits[idx]))
+        if scores[idx] > min_score_threshold:
+            mask_results.append(SAM2MaskResult(masks[idx], scores[idx], logits[idx]))
 
     return mask_results
 
