@@ -94,6 +94,6 @@ if __name__ == "__main__":
     mask_rotated = fretboard_mask_result.rotate_ccw(angle_to_rotate_ccw)
     hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
-    helper.show_image_with_point(image_rotated_masked, hand_rotated.landmarks)
 
-    # canny_result = run_canny_edge(image_rgb)
+    canny_result = run_canny_edge(image_rotated_masked)
+    helper.show_image_with_point(canny_result, hand_rotated.landmarks)
