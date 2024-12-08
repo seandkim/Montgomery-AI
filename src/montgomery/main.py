@@ -85,8 +85,8 @@ def get_hand_result(
 if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
-    # file = "./images/raw/guitar.png"
-    file = "./images/raw/sweetchild/1.png"
+    # file = "./files/images/raw/guitar.png"
+    file = "./files/images/raw/sweetchild/1.png"
     image_bgr = Image.open(file)
     image_rgb = np.array(image_bgr.convert("RGB"))
     # input_point = np.array([[1600, 200]])
