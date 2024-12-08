@@ -33,6 +33,11 @@ class SAM2MaskResult:
             rotate_ccw(self.mask, orientation), self.score, self.logit
         )
 
+    def apply_to_image(self, image: np.ndarray) -> np.ndarray:
+        masked = np.copy(image)
+        masked[self.mask == 0] = np.array([0, 0, 0])
+        return masked
+
 
 # region show function
 def show_image_with_input_point(

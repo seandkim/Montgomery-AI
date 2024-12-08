@@ -82,21 +82,18 @@ if __name__ == "__main__":
     input_point = np.array([[1600, 200]])
     input_label = np.array([1])
 
-    # canny_result = run_canny_edge(image_rgb)
-
-    freboard_mask_result = get_fretboard_mask_result(image_rgb)
+    fretboard_mask_result = get_fretboard_mask_result(image_rgb)
     hand_result = get_hand_result(image_rgb)
-    # helper.show_image_with_point(image_rgb, hand_result.landmarks)
 
-    # tranform
-    angle_in_degree = freboard_mask_result.get_angle_from_positive_x_axis() - 90
+    angle_to_rotate_ccw = fretboard_mask_result.get_angle_from_positive_x_axis() - 90
     image_rotated = helper.rotate_ccw(
         image_rgb,
-        angle_in_degree,
+        angle_to_rotate_ccw,
         (image_rgb.shape[1] // 2, image_rgb.shape[0] // 2),
     )
-    freboard_mask_result = freboard_mask_result.rotate_ccw(angle_in_degree)
-    hand_result = hand_result.rotate_ccw(angle_in_degree)
-    helper.show_image_with_point(image_rotated, hand_result.landmarks)
+    mask_rotated = fretboard_mask_result.rotate_ccw(angle_to_rotate_ccw)
+    hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
+    image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
+    helper.show_image_with_point(image_rotated_masked, hand_rotated.landmarks)
 
-    print(hand_result)
+    # canny_result = run_canny_edge(image_rgb)
