@@ -29,8 +29,8 @@ class Point:
         self.y = y
         self.z = z
 
-    def rotate(self, angle_in_degree, cx, cy):
-        d = math.radians(angle_in_degree)
+    def rotate_ccw(self, angle_in_degree, cx, cy):
+        d = -math.radians(angle_in_degree)
         X = self.x - cx
         Y = self.y - cy
         Z = self.z
@@ -59,7 +59,7 @@ def show_image_with_point(image: np.array, points: List[Point], gray=False):
         plt.imshow(image)
 
     for point in points:
-        plt.plot(point.x * image.shape[1], point.y * image.shape[0], "ro")
+        plt.plot(point.x, point.y, "ro")
     plt.axis("on")
     plt.show(block=True)
 
@@ -103,8 +103,9 @@ def get_bounding_box(image_binary: np.array):
     return x_min, y_min, x_max, y_max
 
 
+# e.g. 3 o'clock needle => 0, 12 o'clock needle => 90
 # Use PCA to find orientation
-def get_orientation(image_binary: np.ndarray) -> np.float64:
+def get_angle_from_positive_x_axis(image_binary: np.ndarray) -> np.float64:
     coords = np.column_stack(np.where(image_binary > 0))
     if coords.shape[0] == 0:
         raise ValueError("image is empty.")
@@ -115,17 +116,19 @@ def get_orientation(image_binary: np.ndarray) -> np.float64:
     order = eigvals.argsort()[::-1]
     eigvecs = eigvecs[:, order]
     angle_in_degree = np.degrees(np.arctan2(*eigvecs[:, 0][::-1]))
-    return angle_in_degree
+    return 180 - angle_in_degree
 
 
-def rotate(
-    image: np.ndarray, angle: np.float64, center: Optional[tuple[int, int]] = None
+def rotate_ccw(
+    image: np.ndarray,
+    angle_in_degree: np.float64,
+    center: Optional[tuple[int, int]] = None,
 ) -> np.ndarray:
     (h, w) = image.shape[:2]
     if center is None:
         center = (w // 2, h // 2)
 
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    M = cv2.getRotationMatrix2D(center, angle_in_degree, 1.0)
     rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_NEAREST, borderValue=0)
     return rotated
 
@@ -134,11 +137,11 @@ def crop_with_mask(image: np.ndarray, mask: np.ndarray, show_image=False):
     # Step 1: Get orientation
     if show_image:
         show_image(image, gray=True)
-    mask_angle = get_orientation(mask)
+    mask_angle = get_angle_from_positive_x_axis(mask)
     print_verbose(f"Mask orientation: {mask_angle:.2f} degrees")
     # Step 2: Rotate mask to align long side horizontally
-    rotated = rotate(image, 90 - mask_angle)
-    rotated_mask = rotate(mask, 90 - mask_angle)
+    rotated = rotate_ccw(image, 90 - mask_angle)
+    rotated_mask = rotate_ccw(mask, 90 - mask_angle)
     if show_image:
         show_image(rotated, gray=True)
     if show_image:

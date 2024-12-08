@@ -61,26 +61,16 @@ def get_fretboard_mask_result(
 
 def get_hand_result(image_rgb: np.ndarray, save_image=False) -> mp_helper.HandResult:
     min_confidence = 0.1
-    left_hand_result = None
     with mp_helper.initialize_mp_hands(min_confidence=min_confidence) as hands:
-        mp_hand_results = mp_helper.run_mp_hands(hands, image_rgb)
-        if mp_hand_results == None:
-            print_verbose(
-                f"hands not detected: file={file}, min_confidence={min_confidence}"
-            )
+        hand_results = mp_helper.run_mp_hands(hands, image_rgb)
+        if len(hand_results) == 0:
+            print_verbose(f"hands not detected")
             exit
 
-        for _, mp_hand_result in enumerate(mp_hand_results):
-            hand_result = HandResult.from_mediapipe_result(
-                mp_hand_result.handedness,
-                mp_hand_result.landmarks_normalized,
-                image_height=image_rgb.shape[1],
-                image_width=image_rgb.shape[0],
-            )
-
-            if left_hand_result == None and hand_result.handedness == Handedness.LEFT:
-                left_hand_result = hand_result
-    return left_hand_result
+        for hand_result in hand_results:
+            if hand_result.handedness == Handedness.LEFT:
+                return hand_result
+    return None
 
 
 if __name__ == "__main__":
@@ -96,12 +86,17 @@ if __name__ == "__main__":
 
     freboard_mask_result = get_fretboard_mask_result(image_rgb)
     hand_result = get_hand_result(image_rgb)
-    helper.show_image_with_point(image_rgb, hand_result.landmarks_normalized)
+    # helper.show_image_with_point(image_rgb, hand_result.landmarks)
 
     # tranform
-    orientation = freboard_mask_result.get_orientation()
-    freboard_mask_result = freboard_mask_result.rotate(orientation)
-    hand_result = hand_result.rotate(orientation)
-    # helper.show_image_with_point(image_rgb, hand_result.landmarks_normalized)
+    angle_in_degree = freboard_mask_result.get_angle_from_positive_x_axis() - 90
+    image_rotated = helper.rotate_ccw(
+        image_rgb,
+        angle_in_degree,
+        (image_rgb.shape[1] // 2, image_rgb.shape[0] // 2),
+    )
+    freboard_mask_result = freboard_mask_result.rotate_ccw(angle_in_degree)
+    hand_result = hand_result.rotate_ccw(angle_in_degree)
+    helper.show_image_with_point(image_rotated, hand_result.landmarks)
 
     print(hand_result)

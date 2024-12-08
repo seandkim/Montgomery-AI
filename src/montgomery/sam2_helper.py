@@ -24,12 +24,14 @@ class SAM2MaskResult:
     def __repr__(self):
         return f"SAM2Result(masks_shape={self.mask.shape}, scores={self.score:.2f}, logits_shape={self.logit.shape})"
 
-    # Use PCA to find orientation
-    def get_orientation(self) -> np.float64:
-        return get_orientation(self.mask)
+    # e.g. 3 o'clock needle => 0, 12 o'clock needle => 90
+    def get_angle_from_positive_x_axis(self) -> np.float64:
+        return get_angle_from_positive_x_axis(self.mask)
 
-    def rotate(self, orientation):
-        return SAM2MaskResult(rotate(self.mask, orientation), self.score, self.logit)
+    def rotate_ccw(self, orientation):
+        return SAM2MaskResult(
+            rotate_ccw(self.mask, orientation), self.score, self.logit
+        )
 
 
 # region show function

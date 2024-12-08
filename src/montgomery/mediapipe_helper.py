@@ -26,14 +26,12 @@ class HandResult:
     def __init__(
         self,
         handedness: Handedness,
-        landmarks_normalized: List[Point],
-        # landmarks: List[Point],
+        landmarks: List[Point],
         image_height: int,
         image_width: int,
     ):
         self.handedness = handedness
-        self.landmarks_normalized = landmarks_normalized
-        # self.landmarks = landmarks
+        self.landmarks = landmarks
         self.image_height = image_height
         self.image_width = image_width
 
@@ -53,30 +51,24 @@ class HandResult:
         else:
             handedness = Handedness[handedness_mp.label.upper()]
 
-        landmarks_normalized: List[Point] = []
-        # landmarks: List[Point] = []
+        landmarks: List[Point] = []
         for landmark in landmarks_normalized_mp.landmark:
-            landmarks_normalized.append(Point(landmark.x, landmark.y, landmark.z))
-            # landmarks.append(
-            #     Point(landmark.x * image_width, landmark.y * image_height, landmark.z)
-            # )
-
-        return HandResult(handedness, landmarks_normalized, image_height, image_width)
-
-    def rotate(self, angle_in_degree):
-        landmarks_normalized = []
-        # landmarks = []
-        for idx in range(self.NUM_LANDMARKS):
-            landmarks_normalized.append(
-                self.landmarks_normalized[idx].rotate(angle_in_degree, 0.5, 0.5)
+            landmarks.append(
+                Point(landmark.x * image_width, landmark.y * image_height, landmark.z)
             )
-            # landmarks.append(
-            #     self.landmarks[idx].rotate(
-            #         angle_in_degree, self.image_width // 2, self.image_height // 2
-            #     )
-            # )
+
+        return HandResult(handedness, landmarks, image_height, image_width)
+
+    def rotate_ccw(self, angle_in_degree):
+        landmarks = []
+        for idx in range(self.NUM_LANDMARKS):
+            landmarks.append(
+                self.landmarks[idx].rotate_ccw(
+                    angle_in_degree, self.image_width // 2, self.image_height // 2
+                )
+            )
         return HandResult(
-            self.handedness, landmarks_normalized, self.image_height, self.image_width
+            self.handedness, landmarks, self.image_height, self.image_width
         )
 
 
@@ -90,7 +82,7 @@ def initialize_mp_hands(min_confidence: float = 0.5) -> Hands:
 
 def run_mp_hands(
     hands: Hands, image: np.ndarray, is_bgr: bool = False
-) -> Optional[List[HandResult]]:
+) -> List[HandResult]:
     # image = cv2.flip(image_original, 1) # just flip when we initialize MpHandResult instead
     if is_bgr:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -114,7 +106,7 @@ def run_mp_hands(
             )
 
         mp_hand_result.append(
-            HandResult(
+            HandResult.from_mediapipe_result(
                 results.multi_handedness[idx].classification[0],
                 results.multi_hand_landmarks[idx],
                 image_height,
@@ -132,7 +124,7 @@ def annotate_mp_hand_result(
 
     mp_drawing.draw_landmarks(
         annotated_image,
-        mp_hand_result.landmarks_normalized,
+        mp_hand_result.landmarks,
         mp_hands.HAND_CONNECTIONS,
         mp_drawing_styles.get_default_hand_landmarks_style(),
         mp_drawing_styles.get_default_hand_connections_style(),
