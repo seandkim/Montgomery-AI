@@ -24,6 +24,13 @@ class SAM2MaskResult:
     def __repr__(self):
         return f"SAM2Result(masks_shape={self.mask.shape}, scores={self.score:.2f}, logits_shape={self.logit.shape})"
 
+    # Use PCA to find orientation
+    def get_orientation(self) -> np.float64:
+        return get_orientation(self.mask)
+
+    def rotate(self, orientation):
+        return SAM2MaskResult(rotate(self.mask, orientation), self.score, self.logit)
+
 
 # region show function
 def show_image_with_input_point(

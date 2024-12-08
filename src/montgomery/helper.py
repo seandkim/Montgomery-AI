@@ -1,3 +1,5 @@
+import math
+from typing import List, Optional
 import cv2
 import os
 import torch
@@ -21,12 +23,43 @@ if VERBOSE is not None and VERBOSE.lower() == "true":
 # endregion
 
 
+class Point:
+    def __init__(self, x: float, y: float, z: float):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def rotate(self, angle_in_degree, cx, cy):
+        d = math.radians(angle_in_degree)
+        X = self.x - cx
+        Y = self.y - cy
+        Z = self.z
+        Xr = X * math.cos(d) - Y * math.sin(d)
+        Yr = X * math.sin(d) + Y * math.cos(d)
+        x_rot = Xr + cx
+        y_rot = Yr + cy
+        return Point(x_rot, y_rot, self.z)
+
+
 def show_image(image: np.array, gray=False):
     plt.figure(figsize=(10, 10))
     if gray:
         plt.imshow(image, cmap="gray")
     else:
         plt.imshow(image)
+    plt.axis("on")
+    plt.show(block=True)
+
+
+def show_image_with_point(image: np.array, points: List[Point], gray=False):
+    plt.figure(figsize=(10, 10))
+    if gray:
+        plt.imshow(image, cmap="gray")
+    else:
+        plt.imshow(image)
+
+    for point in points:
+        plt.plot(point.x * image.shape[1], point.y * image.shape[0], "ro")
     plt.axis("on")
     plt.show(block=True)
 
@@ -72,10 +105,9 @@ def get_bounding_box(image_binary: np.array):
 
 # Use PCA to find orientation
 def get_orientation(image_binary: np.ndarray) -> np.float64:
-
     coords = np.column_stack(np.where(image_binary > 0))
     if coords.shape[0] == 0:
-        raise ValueError("Mask is empty.")
+        raise ValueError("image is empty.")
     mean = np.mean(coords, axis=0)
     centered = coords - mean
     cov = np.cov(centered, rowvar=False)
@@ -86,9 +118,13 @@ def get_orientation(image_binary: np.ndarray) -> np.float64:
     return angle_in_degree
 
 
-def rotate(image, angle):
-    (h, w) = image.shape[0:2]
-    center = (w // 2, h // 2)
+def rotate(
+    image: np.ndarray, angle: np.float64, center: Optional[tuple[int, int]] = None
+) -> np.ndarray:
+    (h, w) = image.shape[:2]
+    if center is None:
+        center = (w // 2, h // 2)
+
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
     rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_NEAREST, borderValue=0)
     return rotated

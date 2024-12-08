@@ -6,26 +6,78 @@ import mediapipe as mp
 from mediapipe.framework.formats import landmark_pb2, classification_pb2
 from mediapipe.python.solutions.hands import Hands
 from .helper import *
-from typing import List
+from typing import List, Tuple
 from typing import Optional
+from enum import Enum
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
 
-class MpHandResult:
+class Handedness(Enum):
+    LEFT = "Left"
+    RIGHT = "Right"
+
+
+class HandResult:
+    NUM_LANDMARKS = len(list(mp_hands.HandLandmark))
+
     def __init__(
         self,
-        landmarks=landmark_pb2.LandmarkList,
-        landmarks_normalized=landmark_pb2.NormalizedLandmarkList,
-        handedness=classification_pb2.ClassificationList,
+        handedness: Handedness,
+        landmarks_normalized: List[Point],
+        # landmarks: List[Point],
+        image_height: int,
+        image_width: int,
     ):
-        self.landmarks: landmark_pb2.LandmarkList = landmarks
-        self.landmarks_normalized: landmark_pb2.NormalizedLandmarkList = (
-            landmarks_normalized
+        self.handedness = handedness
+        self.landmarks_normalized = landmarks_normalized
+        # self.landmarks = landmarks
+        self.image_height = image_height
+        self.image_width = image_width
+
+    # from mediapipe result
+    def from_mediapipe_result(
+        handedness_mp: classification_pb2.Classification,
+        landmarks_normalized_mp: landmark_pb2.NormalizedLandmarkList,
+        image_height: int,
+        image_width: int,
+        perserve_handedness=False,  # mediapipe interprets the image as mirrored image, so use this flag only if original image was already flipped
+    ):
+        if not perserve_handedness:
+            if handedness_mp.label == "Left":
+                handedness = Handedness.RIGHT
+            else:
+                handedness = Handedness.LEFT
+        else:
+            handedness = Handedness[handedness_mp.label.upper()]
+
+        landmarks_normalized: List[Point] = []
+        # landmarks: List[Point] = []
+        for landmark in landmarks_normalized_mp.landmark:
+            landmarks_normalized.append(Point(landmark.x, landmark.y, landmark.z))
+            # landmarks.append(
+            #     Point(landmark.x * image_width, landmark.y * image_height, landmark.z)
+            # )
+
+        return HandResult(handedness, landmarks_normalized, image_height, image_width)
+
+    def rotate(self, angle_in_degree):
+        landmarks_normalized = []
+        # landmarks = []
+        for idx in range(self.NUM_LANDMARKS):
+            landmarks_normalized.append(
+                self.landmarks_normalized[idx].rotate(angle_in_degree, 0.5, 0.5)
+            )
+            # landmarks.append(
+            #     self.landmarks[idx].rotate(
+            #         angle_in_degree, self.image_width // 2, self.image_height // 2
+            #     )
+            # )
+        return HandResult(
+            self.handedness, landmarks_normalized, self.image_height, self.image_width
         )
-        self.handedness: classification_pb2.ClassificationList = handedness
 
 
 def initialize_mp_hands(min_confidence: float = 0.5) -> Hands:
@@ -37,9 +89,9 @@ def initialize_mp_hands(min_confidence: float = 0.5) -> Hands:
 
 
 def run_mp_hands(
-    hands: Hands, image_original: np.ndarray, is_bgr: bool = False
-) -> Optional[List[MpHandResult]]:
-    image = cv2.flip(image_original, 1)  # flip y-axis for correct handedness
+    hands: Hands, image: np.ndarray, is_bgr: bool = False
+) -> Optional[List[HandResult]]:
+    # image = cv2.flip(image_original, 1) # just flip when we initialize MpHandResult instead
     if is_bgr:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = hands.process(image)
@@ -53,7 +105,7 @@ def run_mp_hands(
     for idx in range(len(results.multi_handedness)):
         if VERBOSE:
             hand_landmarks = results.multi_hand_landmarks[idx]
-            image_height, image_width, _ = image_original.shape
+            image_height, image_width, _ = image.shape
             print_verbose("hand_landmarks:", hand_landmarks)
             print_verbose(
                 f"Index finger tip coordinates: (",
@@ -62,10 +114,11 @@ def run_mp_hands(
             )
 
         mp_hand_result.append(
-            MpHandResult(
-                results.multi_hand_world_landmarks[idx],
+            HandResult(
+                results.multi_handedness[idx].classification[0],
                 results.multi_hand_landmarks[idx],
-                results.multi_handedness[idx],
+                image_height,
+                image_width,
             )
         )
 
@@ -73,7 +126,7 @@ def run_mp_hands(
 
 
 def annotate_mp_hand_result(
-    image: np.ndarray, mp_hand_result: MpHandResult
+    image: np.ndarray, mp_hand_result: HandResult
 ) -> np.ndarray:
     annotated_image = cv2.flip(image, 1).copy()
 

@@ -13,3 +13,6 @@
 ## 6th
 - PCA to crop and rotate the image based on mask
 - canny edge: had to skip blurring because fret bar would not be detected
+
+## 7th
+- rotating hand coordinate was a pain... => create your own class

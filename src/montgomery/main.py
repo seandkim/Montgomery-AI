@@ -2,15 +2,16 @@ import cv2
 import numpy as np
 import os
 from PIL import Image
-from typing import List
+from typing import List, Optional
 import matplotlib.pyplot as plt
 
 from . import helper
 from . import sam2_helper
 from . import mediapipe_helper as mp_helper
 
-from .helper import print_verbose, show_image
+from .helper import print_verbose
 from .sam2_helper import SAM2MaskResult
+from .mediapipe_helper import HandResult, Handedness
 
 
 def run_canny_edge(image_rgb: np.ndarray, blur=False, show_image=False) -> np.ndarray:
@@ -33,32 +34,53 @@ def run_canny_edge(image_rgb: np.ndarray, blur=False, show_image=False) -> np.nd
 # region fretboard
 
 
-def get_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2MaskResult:
+def select_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2MaskResult:
     # TODO: implement
     return mask_results[1]
 
 
-def get_fretboard_as_image(image_rgb: np.ndarray, show_image=False) -> np.ndarray:
+def get_fretboard_mask_result(
+    image_rgb: np.ndarray, show_image=False
+) -> SAM2MaskResult:
     device = helper.setup_torch_device()
     mask_results = sam2_helper.run_sam2(device, image_rgb, input_point, input_label)
     if show_image:
         sam2_helper.show_mask(
-            annotated_image,
+            image_rgb,
             mask_results,
             point_coords=input_point,
             input_labels=input_label,
             borders=True,
             block=True,
         )
-    fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(mask_results)
-    fretboard_cropped = helper.crop_with_mask(image_rgb, fretboard_mask_result.mask)
-    if show_image:
-        show_image(fretboard_cropped)
-    run_canny_edge(fretboard_cropped, blur=False, show_image=True)
-    return image_rgb
+    return select_fretboard_mask_result(mask_results)
 
 
 # endregion
+
+
+def get_hand_result(image_rgb: np.ndarray, save_image=False) -> mp_helper.HandResult:
+    min_confidence = 0.1
+    left_hand_result = None
+    with mp_helper.initialize_mp_hands(min_confidence=min_confidence) as hands:
+        mp_hand_results = mp_helper.run_mp_hands(hands, image_rgb)
+        if mp_hand_results == None:
+            print_verbose(
+                f"hands not detected: file={file}, min_confidence={min_confidence}"
+            )
+            exit
+
+        for _, mp_hand_result in enumerate(mp_hand_results):
+            hand_result = HandResult.from_mediapipe_result(
+                mp_hand_result.handedness,
+                mp_hand_result.landmarks_normalized,
+                image_height=image_rgb.shape[1],
+                image_width=image_rgb.shape[0],
+            )
+
+            if left_hand_result == None and hand_result.handedness == Handedness.LEFT:
+                left_hand_result = hand_result
+    return left_hand_result
 
 
 if __name__ == "__main__":
@@ -70,20 +92,16 @@ if __name__ == "__main__":
     input_point = np.array([[1600, 200]])
     input_label = np.array([1])
 
-    fretboard_image: np.ndarray = get_fretboard_as_image(image_rgb)
-    canny_result = run_canny_edge(image_rgb)
+    # canny_result = run_canny_edge(image_rgb)
 
-    min_confidence = 0.1
-    with mp_helper.initialize_mp_hands(min_confidence=min_confidence) as hands:
-        mp_hand_results = mp_helper.run_mp_hands(hands, image_rgb)
-        if mp_hand_results == None:
-            print_verbose(
-                f"hands not detected: file={file}, min_confidence={min_confidence}"
-            )
-            exit
+    freboard_mask_result = get_fretboard_mask_result(image_rgb)
+    hand_result = get_hand_result(image_rgb)
+    helper.show_image_with_point(image_rgb, hand_result.landmarks_normalized)
 
-        for idx, mp_hand_result in enumerate(mp_hand_results):
-            annotated_image = mp_helper.annotate_mp_hand_result(
-                image_rgb, mp_hand_result
-            )
-            # cv2.imwrite(f"{OUTPUT_DIR}/mediapipe_{base}_{idx}.{ext}", annotated_image)
+    # tranform
+    orientation = freboard_mask_result.get_orientation()
+    freboard_mask_result = freboard_mask_result.rotate(orientation)
+    hand_result = hand_result.rotate(orientation)
+    # helper.show_image_with_point(image_rgb, hand_result.landmarks_normalized)
+
+    print(hand_result)
