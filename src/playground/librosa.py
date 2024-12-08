@@ -45,12 +45,13 @@ def note_array_to_tuple_of_occurrence(notes):
 audio_path = "files/sweetchild/audio.mp3"
 y, sr = librosa.load(audio_path, sr=None)
 
-# Define pitch range (adjust based on your expected pitch range)
+# Run YIN pitch detection
+occurrence_threshold = 5
+hop_length = 512  # default is 512
+interval_bt_frame = hop_length / float(sr)
 fmin = librosa.note_to_hz("C2")  # ~65 Hz
 fmax = librosa.note_to_hz("C7")  # ~2093 Hz
-
-# Run YIN pitch detection
-f0 = librosa.yin(y, fmin=fmin, fmax=fmax, sr=sr)
+f0 = librosa.yin(y, fmin=fmin, fmax=fmax, sr=sr, hop_length=hop_length)
 
 # Create a time array for the pitch values
 times = librosa.frames_to_time(np.arange(len(f0)), sr=sr)
@@ -75,7 +76,9 @@ end_frame = np.searchsorted(times, end_time)
 interval_pitches = f0[start_frame:end_frame]
 note_names = [hz_to_note_name(h, shift_by_half_note=1) for h in interval_pitches]
 note_occurrences = note_array_to_tuple_of_occurrence(note_names)
-note_occurrences = [(note, occ) for (note, occ) in note_occurrences if occ >= 5]
+note_occurrences = [
+    (note, occ) for (note, occ) in note_occurrences if occ >= occurrence_threshold
+]
 for note, occurrence in note_occurrences:
     print(note, occurrence)
 
