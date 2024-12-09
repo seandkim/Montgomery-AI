@@ -195,7 +195,9 @@ def run_sam2(
     mask_results = []
     for idx in range(len(masks)):
         if scores[idx] > min_score_threshold:
-            mask = np.where(masks[idx] == 1, 255, 0)  # sam2 returns 0,1
+            mask = np.where(masks[idx] == 1, 255, 0).astype(
+                np.uint8
+            )  # sam2 returns 0,1
             mask_results.append(SAM2MaskResult(mask, scores[idx], logits[idx]))
 
     return mask_results

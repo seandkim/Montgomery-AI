@@ -126,7 +126,7 @@ def run_vismont(image_rgb, fretboard_mask_result: SAM2MaskResult):
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
     canny = run_canny_edge(image_rotated_masked, skip_blur=True)
 
-    return VisMontResult(image_rgb, mask_rotated, canny, hand_rotated)
+    return VisMontResult(image_rgb, mask_rotated.mask, canny, hand_rotated)
 
 
 def run_fullmont(video_file, audio_file):
@@ -172,10 +172,16 @@ def test_vismont_on_one_image(file):
     )
     vismont = run_vismont(image_rgb, fretboard_mask_result)
     # vismont.plot_canny_and_fingertips(exclude_thumb=True)
+    lines = helper.run_hough_line(vismont.mask)
+
+    vertical_lines = [line for line in lines if line.is_vertical()]
+    helper.show_image_with_lines(vismont.mask, vertical_lines, gray=True)
 
     for _ in range(3):
         vismont.canny = helper.dilate_and_erode(vismont.canny)
-        vismont.plot_canny_and_fingertips(exclude_thumb=True)
+        # vismont.plot_canny_and_fingertips(exclude_thumb=True)
+        lines = helper.run_hough_line(vismont.mask)
+        helper.show_image_with_lines(vismont.mask, lines, gray=True)
 
     return vismont
 

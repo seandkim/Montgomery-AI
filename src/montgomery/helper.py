@@ -70,6 +70,23 @@ def show_image_with_point(
     plt.show(block=True)
 
 
+def show_image_with_lines(
+    image: np.array, lines: List[List[int]], title: str = "", gray=False
+):
+    plt.figure(figsize=(10, 10))
+    if gray:
+        plt.imshow(image, cmap="gray")
+    else:
+        plt.imshow(image)
+
+    for line in lines[:20]:
+        x1, y1, x2, y2 = line
+        plt.plot([x1, x2], [y1, y2], "r-", markersize=1)
+    plt.axis("on")
+    plt.title(title)
+    plt.show(block=True)
+
+
 def setup_torch_device() -> torch.device:
     # if using Apple MPS, fall back to CPU for unsupported ops
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -176,6 +193,37 @@ def dilate_and_erode(image, skip_dilation=False, iterations=1):
         image = cv2.dilate(image, kernel, iterations=iterations)
     image = cv2.erode(image, kernel, iterations=iterations)
     return image
+
+
+def run_hough_line(image_binary):
+    lines = cv2.HoughLinesP(
+        image_binary,
+        rho=1,
+        theta=np.pi / 180,
+        threshold=1,
+        minLineLength=1,  # Adjust based on fret length in image
+        maxLineGap=100,  # Adjust tolerance for gaps in a line
+    )
+
+    # 'lines' will be an array of shape (N,1,4), where each line is represented as [x1,y1,x2,y2].
+    if lines is not None:
+        lines = lines[:, 0, :]  # reshape to (N,4)
+    else:
+        lines = np.empty((0, 4), dtype=np.float32)
+    return lines
+
+
+def is_vertical(line, tolerance=10):
+    x1, y1, x2, y2 = line
+    angle = math.atan2((y2 - y1), (x2 - x1))
+    # Normalize angle between 0 and π
+    if angle < 0:
+        angle += math.pi
+
+    # Check if angle is near vertical (close to π/2)
+    # Allow a small tolerance, say ±5°
+    tolerance = tolerance * math.pi / 180
+    return abs(angle - math.pi / 2) < tolerance
 
 
 class Pitch:
