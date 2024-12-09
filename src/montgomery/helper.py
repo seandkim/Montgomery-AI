@@ -189,3 +189,38 @@ def rectangularity_score(mask: np.ndarray):
     # Compute the rectangularity score
     score = area / rect_area
     return score
+
+
+class GuitarTab:
+    base_strings = ["E", "A", "D", "G", "B", "e"]
+
+    def __init__(self, string_index: int, fret_index: int):
+        self.string_index = string_index
+        self.fret_index = fret_index
+
+    def __repr__(self):
+        return f"{self.fret_index} on {GuitarTab.base_strings[self.fret_index]} string"
+
+
+def tabs2string(tabs: List[GuitarTab]):
+    positions_per_string = [[f"{s} "] for s in GuitarTab.base_strings]
+    for tab in tabs:
+        for string_idx in range(len(GuitarTab.base_strings)):
+            if string_idx == tab.string_index:
+                fret_index = str(tab.fret_index)
+                if (len(fret_index)) == 1:
+                    fret_index = f"-{fret_index}"
+                positions_per_string[string_idx].append(fret_index)
+            else:
+                positions_per_string[string_idx].append("--")
+
+    return "\n".join(["--".join(positions) for positions in positions_per_string])
+
+
+def test_tabs2string():
+    tabs = [GuitarTab(2, 12), GuitarTab(4, 15), GuitarTab(3, 14), GuitarTab(3, 12)]
+    print(tabs2string(tabs))
+
+
+if __name__ == "__main__":
+    test_tabs2string()
