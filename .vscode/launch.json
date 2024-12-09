@@ -6,7 +6,7 @@
       "type": "python",
       "request": "launch",
       // "module": "montgomery.main",
-      "module": "playground.librosa",
+      "module": "playground.crepe",
       "justMyCode": false,
       "env": {
         "PYTHON_VERBOSE_MODE": "true",
