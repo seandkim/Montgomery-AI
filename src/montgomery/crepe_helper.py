@@ -21,6 +21,9 @@ class PitchInfo:
     def __repr__(self):
         return f"timestamp: {self.timestamp:.2f}s, duration: {self.duration:.2f}s, Note: {self.note} (Avg Conf: {np.mean(self.confidences):.2f})"
 
+    def to_simple_string(self):
+        return f"{self.note} ({self.timestamp:.2f}s for {self.duration:.2f}s. Conf: {np.mean(self.confidences):.2f})"
+
     # merge pitch_info if there are same note
     def merge(self, other_pitch_info):
         if self.note != other_pitch_info.note:

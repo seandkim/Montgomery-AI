@@ -5,6 +5,8 @@ from PIL import Image
 from typing import List, Optional
 import matplotlib.pyplot as plt
 
+from moviepy import VideoFileClip  # set IMAGEIO_FFMPEG_EXE env var
+
 from . import helper
 from . import sam2_helper
 from . import mediapipe_helper as mp_helper
@@ -101,10 +103,14 @@ class VisMontResult:
         self.canny = canny
         self.hand = hand
 
+    def plot_canny_and_fingertips(self, exclude_thumb=False, title=""):
+        indices = [0, 1, 2, 3, 4]
+        if exclude_thumb:
+            indices = [1, 2, 3, 4]
+        helper.show_image_with_point(self.canny, self.hand.tips(indices), title=title)
 
-def run_vismont(
-    image_rgb, fretboard_mask_result: SAM2MaskResult = None, show_result=False
-):
+
+def run_vismont(image_rgb, fretboard_mask_result: SAM2MaskResult):
     hand_result: HandResult = get_hand_result(image_rgb)
 
     angle_to_rotate_ccw = fretboard_mask_result.get_angle_from_positive_x_axis() - 90
@@ -118,31 +124,57 @@ def run_vismont(
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
     canny = run_canny_edge(image_rotated_masked)
 
-    if show_result:
-        helper.show_image_with_point(canny, hand_rotated.tips())
-
     return VisMontResult(image_rgb, mask_rotated, canny, hand_rotated)
 
 
-if __name__ == "__main__":
-    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+def run_fullmont(video_file, audio_file):
+    video = VideoFileClip(video_file)
+    pitch_infos = crepe_helper.run_crepe(
+        audio_file, model_capacity="tiny", shift_by_half_note=1
+    )
 
-    file = "files/sweetchild/audio.mp3"
-    # pitch_infos = crepe_helper.run_crepe(
-    #     file, model_capacity="tiny", shift_by_half_note=1
-    # )
+    print_verbose(f"Fullmont processing video/audio of {video.duration}s")
+    input_point = np.array([[630, 160]])
+    input_label = np.array([1])
+    frame = video.get_frame(pitch_infos[0].timestamp)
+    fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
+        frame, input_point, input_label, show_all_masks=False
+    )
 
+    for pitch_info in pitch_infos:
+        print_verbose(f"Fullmont processing: {pitch_info}")
+        frame = video.get_frame(pitch_info.timestamp)
+        helper.show_image(frame)
+        vismont_result = run_vismont(frame, fretboard_mask_result)
+        vismont_result.plot_canny_and_fingertips(
+            exclude_thumb=True,
+            title=pitch_info.to_simple_string(),
+        )
+        pass
+
+
+def test_vismont():
     # file = "./files/images/raw/guitar.png"
     file = "./files/sweetchild/1.png"
     image_bgr = Image.open(file)
     image_rgb = np.array(image_bgr.convert("RGB"))
 
     # input_point = np.array([[1600, 200]])
-    input_point = np.array([[2670, 558]])
+    # input_point = np.array([[2670, 558]])
+    input_point = np.array([[630, 160]])
     input_label = np.array([1])
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
         image_rgb, input_point, input_label, show_all_masks=False
     )
+    vismont = run_vismont(image_rgb, fretboard_mask_result, show_result=True)
+    vismont.plot_canny_and_fingertips()
 
-    result = run_vismont(image_rgb, fretboard_mask_result, show_result=True)
+
+if __name__ == "__main__":
+    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
+
+    video_file = "files/sweetchild/video.mp4"
+    audio_file = "files/sweetchild/audio.mp3"
+    fullmont = run_fullmont(video_file, audio_file)
+
     pass

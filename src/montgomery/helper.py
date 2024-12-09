@@ -51,7 +51,9 @@ def show_image(image: np.array, gray=False):
     plt.show(block=True)
 
 
-def show_image_with_point(image: np.array, points: List[Point], gray=False):
+def show_image_with_point(
+    image: np.array, points: List[Point], title: str = "", gray=False
+):
     plt.figure(figsize=(10, 10))
     if gray:
         plt.imshow(image, cmap="gray")
@@ -61,6 +63,7 @@ def show_image_with_point(image: np.array, points: List[Point], gray=False):
     for point in points:
         plt.plot(point.x, point.y, "ro")
     plt.axis("on")
+    plt.title(title)
     plt.show(block=True)
 
 

@@ -36,14 +36,17 @@ class HandResult:
         self.image_width = image_width
 
     # returns points of fingertips for thumb, index, ..., pink
-    def tips(self) -> List[Point]:
-        return [
+    def tips(self, indices: List[int] = None) -> List[Point]:
+        all_tips = [
             self.landmarks[mp_hands.HandLandmark.THUMB_TIP],
             self.landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP],
             self.landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP],
             self.landmarks[mp_hands.HandLandmark.RING_FINGER_TIP],
             self.landmarks[mp_hands.HandLandmark.PINKY_TIP],
         ]
+        if indices is None:
+            return all_tips
+        return [all_tips[i] for i in indices]
 
     # from mediapipe result
     def from_mediapipe_result(
@@ -99,7 +102,7 @@ def run_mp_hands(
     results = hands.process(image)
 
     # Print handedness and draw hand landmarks on the image.
-    print_verbose("Handedness:", results.multi_handedness)
+    # print_verbose("Handedness:", results.multi_handedness)
     if not results.multi_hand_landmarks:
         return None
 
@@ -108,12 +111,12 @@ def run_mp_hands(
         if VERBOSE:
             hand_landmarks = results.multi_hand_landmarks[idx]
             image_height, image_width, _ = image.shape
-            print_verbose("hand_landmarks:", hand_landmarks)
-            print_verbose(
-                f"Index finger tip coordinates: (",
-                f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, "
-                f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})",
-            )
+            # print_verbose("hand_landmarks:", hand_landmarks)
+            # print_verbose(
+            #     f"Index finger tip coordinates: (",
+            #     f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, "
+            #     f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})",
+            # )
 
         mp_hand_result.append(
             HandResult.from_mediapipe_result(

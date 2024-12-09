@@ -10,7 +10,8 @@
       "justMyCode": false,
       "env": {
         "PYTHON_VERBOSE_MODE": "true",
-        "PYTORCH_ENABLE_MPS_FALLBACK": "1"
+        "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+        "IMAGEIO_FFMPEG_EXE": "/opt/homebrew/bin/ffmpeg"
       }
     }
   ]
