@@ -191,21 +191,55 @@ def rectangularity_score(mask: np.ndarray):
     return score
 
 
+class Pitch:
+    NOTE_NAME_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+    def __init__(self, note_name: str, octave: int):
+        self.note_name = note_name
+        self.octave = octave
+
+    def __repr__(self):
+        return f"{self.note_name}{self.octave}"
+
+    def to_int(self) -> int:
+        return Pitch.NOTE_NAME_ORDER.index(self.note_name) + 12 * (self.octave)
+
+    def subtract(self, other: "Pitch") -> int:
+        return self.to_int() - other.to_int()
+
+
 class GuitarTab:
-    base_strings = ["E", "A", "D", "G", "B", "e"]
+    MAX_FRET_INDEX = 24
+    BASE_STRINGS = [
+        Pitch("E", 2),
+        Pitch("A", 2),
+        Pitch("D", 3),
+        Pitch("G", 3),
+        Pitch("B", 3),
+        Pitch("E", 4),
+    ]
 
     def __init__(self, string_index: int, fret_index: int):
         self.string_index = string_index
         self.fret_index = fret_index
 
     def __repr__(self):
-        return f"{self.fret_index} on {GuitarTab.base_strings[self.fret_index]} string"
+        return f"{GuitarTab.BASE_STRINGS[self.string_index]}: {self.fret_index}"
+
+    def possible_tabs(pitch: Pitch):
+        possible = []
+        for idx, base in enumerate(GuitarTab.BASE_STRINGS):
+            diff = pitch.subtract(base)
+            if 0 < diff and diff <= GuitarTab.MAX_FRET_INDEX:
+                possible.append(GuitarTab(idx, diff))
+        return possible
 
 
 def tabs2string(tabs: List[GuitarTab]):
-    positions_per_string = [[f"{s} "] for s in GuitarTab.base_strings]
+    positions_per_string = [[f"{s.note_name} "] for s in GuitarTab.BASE_STRINGS]
+    positions_per_string[-1][0] = positions_per_string[-1][0].lower()
     for tab in tabs:
-        for string_idx in range(len(GuitarTab.base_strings)):
+        for string_idx in range(len(GuitarTab.BASE_STRINGS)):
             if string_idx == tab.string_index:
                 fret_index = str(tab.fret_index)
                 if (len(fret_index)) == 1:
@@ -224,3 +258,4 @@ def test_tabs2string():
 
 if __name__ == "__main__":
     test_tabs2string()
+    print(GuitarTab.possible_tabs(Pitch("E", 3)))
