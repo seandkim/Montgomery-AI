@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from . import helper
 from . import sam2_helper
 from . import mediapipe_helper as mp_helper
+from . import crepe_helper
 
 from .helper import print_verbose
 from .sam2_helper import SAM2MaskResult
@@ -45,7 +46,11 @@ def select_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2Mask
 
 
 def get_fretboard_mask_result(
-    image_rgb: np.ndarray, show_all_masks=False, ignore_not_found=False
+    image_rgb: np.ndarray,
+    input_point: np.ndarray,
+    input_label: np.ndarray,
+    show_all_masks=False,
+    ignore_not_found=False,
 ) -> SAM2MaskResult:
     device = helper.setup_torch_device()
     mask_results = sam2_helper.run_sam2(device, image_rgb, input_point, input_label)
@@ -82,20 +87,24 @@ def get_hand_result(
     return None
 
 
-if __name__ == "__main__":
-    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+# Visual Montgomery Result (detecting fretboard mask and hand in one image)
+class VisMontResult:
+    def __init__(
+        self,
+        image: np.ndarray,
+        mask: np.ndarray,
+        canny: np.ndarray,
+        hand: HandResult,
+    ):
+        self.image = image
+        self.mask = mask
+        self.canny = canny
+        self.hand = hand
 
-    # file = "./files/images/raw/guitar.png"
-    file = "./files/images/raw/sweetchild/1.png"
-    image_bgr = Image.open(file)
-    image_rgb = np.array(image_bgr.convert("RGB"))
-    # input_point = np.array([[1600, 200]])
-    input_point = np.array([[2670, 558]])
-    input_label = np.array([1])
 
-    fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
-        image_rgb, show_all_masks=False
-    )
+def run_vismont(
+    image_rgb, fretboard_mask_result: SAM2MaskResult = None, show_result=False
+):
     hand_result: HandResult = get_hand_result(image_rgb)
 
     angle_to_rotate_ccw = fretboard_mask_result.get_angle_from_positive_x_axis() - 90
@@ -107,6 +116,33 @@ if __name__ == "__main__":
     mask_rotated = fretboard_mask_result.rotate_ccw(angle_to_rotate_ccw)
     hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
+    canny = run_canny_edge(image_rotated_masked)
 
-    canny_result = run_canny_edge(image_rotated_masked)
-    helper.show_image_with_point(canny_result, hand_rotated.tips())
+    if show_result:
+        helper.show_image_with_point(canny, hand_rotated.tips())
+
+    return VisMontResult(image_rgb, mask_rotated, canny, hand_rotated)
+
+
+if __name__ == "__main__":
+    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+
+    file = "files/sweetchild/audio.mp3"
+    # pitch_infos = crepe_helper.run_crepe(
+    #     file, model_capacity="tiny", shift_by_half_note=1
+    # )
+
+    # file = "./files/images/raw/guitar.png"
+    file = "./files/sweetchild/1.png"
+    image_bgr = Image.open(file)
+    image_rgb = np.array(image_bgr.convert("RGB"))
+
+    # input_point = np.array([[1600, 200]])
+    input_point = np.array([[2670, 558]])
+    input_label = np.array([1])
+    fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
+        image_rgb, input_point, input_label, show_all_masks=False
+    )
+
+    result = run_vismont(image_rgb, fretboard_mask_result, show_result=True)
+    pass
