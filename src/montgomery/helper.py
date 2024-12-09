@@ -13,7 +13,10 @@ VERBOSE = False
 
 def print_verbose(*args, **kwargs):
     if VERBOSE:
-        print(args, kwargs)
+        GREEN = "\033[32m"
+        RESET = "\033[0m"
+        message = " ".join(map(str, args))
+        print(f"{GREEN}{message}{RESET}", **kwargs)
 
 
 VERBOSE = os.environ.get("PYTHON_VERBOSE_MODE")
@@ -198,11 +201,38 @@ class Pitch:
         self.note_name = note_name
         self.octave = octave
 
+    def __init__(self, as_str: str):
+        if len(as_str) < 2 or len(as_str) > 3:
+            raise ValueError(f"Invalid pitch string: {as_str}")
+
+        as_str = as_str.replace("\u266F", "#")  # "♯" symbol
+        if as_str[:-1].upper() not in Pitch.NOTE_NAME_ORDER:
+            raise ValueError(f"Invalid note name: {as_str[:-1]}")
+        self.note_name = as_str[:-1].upper()
+        if not as_str[-1].isdigit() or int(as_str[-1]) < 0:
+            raise ValueError(f"Invalid octave: {as_str[-1]}")
+        self.octave = int(as_str[-1])
+
     def __repr__(self):
         return f"{self.note_name}{self.octave}"
 
     def to_int(self) -> int:
         return Pitch.NOTE_NAME_ORDER.index(self.note_name) + 12 * (self.octave)
+
+    def __eq__(self, other: "Pitch") -> bool:
+        return self.to_int() == other.to_int()
+
+    def __lt__(self, other: "Pitch") -> bool:
+        return self.to_int() < other.to_int()
+
+    def __le__(self, other: "Pitch") -> bool:
+        return self.to_int() <= other.to_int()
+
+    def __gt__(self, other: "Pitch") -> bool:
+        return self.to_int() > other.to_int()
+
+    def __ge__(self, other: "Pitch") -> bool:
+        return self.to_int() >= other.to_int()
 
     def subtract(self, other: "Pitch") -> int:
         return self.to_int() - other.to_int()
@@ -211,12 +241,12 @@ class Pitch:
 class GuitarTab:
     MAX_FRET_INDEX = 24
     BASE_STRINGS = [
-        Pitch("E", 2),
-        Pitch("A", 2),
-        Pitch("D", 3),
-        Pitch("G", 3),
-        Pitch("B", 3),
-        Pitch("E", 4),
+        Pitch("E2"),
+        Pitch("A2"),
+        Pitch("D3"),
+        Pitch("G3"),
+        Pitch("B3"),
+        Pitch("E4"),
     ]
 
     def __init__(self, string_index: int, fret_index: int):
@@ -258,4 +288,4 @@ def test_tabs2string():
 
 if __name__ == "__main__":
     test_tabs2string()
-    print(GuitarTab.possible_tabs(Pitch("E", 3)))
+    print(GuitarTab.possible_tabs(Pitch("E3")))

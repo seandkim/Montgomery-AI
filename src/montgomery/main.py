@@ -12,7 +12,7 @@ from . import sam2_helper
 from . import mediapipe_helper as mp_helper
 from . import crepe_helper
 
-from .helper import print_verbose
+from .helper import GuitarTab, print_verbose
 from .sam2_helper import SAM2MaskResult
 from .mediapipe_helper import HandResult, Handedness
 
@@ -129,26 +129,29 @@ def run_vismont(image_rgb, fretboard_mask_result: SAM2MaskResult):
 
 def run_fullmont(video_file, audio_file):
     video = VideoFileClip(video_file)
-    pitch_infos = crepe_helper.run_crepe(
+    audio_pitch_infos = crepe_helper.run_crepe(
         audio_file, model_capacity="tiny", shift_by_half_note=1
     )
 
     print_verbose(f"Fullmont processing video/audio of {video.duration}s")
     input_point = np.array([[630, 160]])
     input_label = np.array([1])
-    frame = video.get_frame(pitch_infos[0].timestamp)
+    frame = video.get_frame(audio_pitch_infos[0].timestamp)
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
         frame, input_point, input_label, show_all_masks=False
     )
 
-    for pitch_info in pitch_infos:
-        print_verbose(f"Fullmont processing: {pitch_info}")
-        frame = video.get_frame(pitch_info.timestamp)
+    for audio_pitch_info in audio_pitch_infos:
+        possible_tabs = GuitarTab.possible_tabs(audio_pitch_info.pitch)
+        print_verbose(
+            f"Fullmont processing: {audio_pitch_info} / Options: {possible_tabs})"
+        )
+        frame = video.get_frame(audio_pitch_info.timestamp)
         helper.show_image(frame)
         vismont_result = run_vismont(frame, fretboard_mask_result)
         vismont_result.plot_canny_and_fingertips(
             exclude_thumb=True,
-            title=pitch_info.to_simple_string(),
+            title=audio_pitch_info.to_simple_string(),
         )
         pass
 

@@ -5,44 +5,44 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-from montgomery.helper import print_verbose
+from .helper import Pitch, print_verbose
 
 
-class PitchInfo:
+class AudioPitchInfo:
     def __init__(
         self, timestamp, duration, frequency, confidence, shift_by_half_note: int = 0
     ):
         self.timestamp = timestamp
         self.duration = duration
         midi = librosa.hz_to_midi(frequency) + shift_by_half_note
-        self.note = librosa.midi_to_note(midi.astype(int))
+        self.pitch: Pitch = Pitch(librosa.midi_to_note(midi.astype(int)))
         self.confidences: List[float] = [confidence]
 
     def __repr__(self):
-        return f"timestamp: {self.timestamp:.2f}s, duration: {self.duration:.2f}s, Note: {self.note} (Avg Conf: {np.mean(self.confidences):.2f})"
+        return f"timestamp: {self.timestamp:.2f}s, duration: {self.duration:.2f}s, Pitch: {self.pitch} (Avg Conf: {np.mean(self.confidences):.2f})"
 
     def to_simple_string(self):
-        return f"{self.note} ({self.timestamp:.2f}s for {self.duration:.2f}s. Conf: {np.mean(self.confidences):.2f})"
+        return f"{self.pitch} ({self.timestamp:.2f}s for {self.duration:.2f}s. Conf: {np.mean(self.confidences):.2f})"
 
-    # merge pitch_info if there are same note
+    # merge pitch_info if there are same pitch
     def merge(self, other_pitch_info):
-        if self.note != other_pitch_info.note:
-            raise ValueError("Cannot merge PitchInfo with different notes")
+        if self.pitch != other_pitch_info.pitch:
+            raise ValueError("Cannot merge PitchInfo with different pitches")
         else:
             self.duration += other_pitch_info.duration
             self.confidences.extend(other_pitch_info.confidences)
 
 
-# merge consecutive pitch info if same note
-def smooth_pitch_infos(pitch_infos: List[PitchInfo], min_duration_ms=50):
+# merge consecutive pitch info if same pitch
+def smooth_pitch_infos(pitch_infos: List[AudioPitchInfo], min_duration_ms=50):
     if not pitch_infos:
         return []
 
-    def merge(pitch_infos1: List[PitchInfo]):
+    def merge(pitch_infos1: List[AudioPitchInfo]):
         merged_pitch_infos = [pitch_infos1[0]]
         for pitch_info in pitch_infos1[1:]:
             last_pitch_info = merged_pitch_infos[-1]
-            if last_pitch_info.note == pitch_info.note:
+            if last_pitch_info.pitch == pitch_info.pitch:
                 last_pitch_info.merge(pitch_info)
             else:
                 merged_pitch_infos.append(pitch_info)
@@ -76,7 +76,7 @@ def run_crepe(
     offset_seconds: int = 0,
     duration_seconds: int = 5,
     confidence_threshold: float = 0.7,
-) -> List[PitchInfo]:
+) -> List[AudioPitchInfo]:
     y, sample_rate = librosa.load(
         file, sr=16000, offset=offset_seconds, duration=duration_seconds
     )  # crepe works best with 16k
@@ -97,7 +97,7 @@ def run_crepe(
         timestamp = timestamps[idx]
         duration = timestamps[idx + 1] - timestamp
         pitch_infos.append(
-            PitchInfo(
+            AudioPitchInfo(
                 timestamp,
                 duration,
                 frequencies[idx],
