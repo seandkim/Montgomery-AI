@@ -139,30 +139,6 @@ def rotate_ccw(
     return rotated
 
 
-# def crop_with_mask(image: np.ndarray, mask: np.ndarray, show_image=False):
-#     # Step 1: Get orientation
-#     if show_image:
-#         show_image(image, gray=True)
-#     mask_angle = get_angle_from_positive_x_axis(mask)
-#     print_verbose(f"Mask orientation: {mask_angle:.2f} degrees")
-#     # Step 2: Rotate mask to align long side horizontally
-#     rotated = rotate_ccw(image, 90 - mask_angle)
-#     rotated_mask = rotate_ccw(mask, 90 - mask_angle)
-#     if show_image:
-#         show_image(rotated, gray=True)
-#     if show_image:
-#         show_image(rotated_mask, gray=True)
-
-#     # Step 3: Crop the rotated mask
-#     # x_min, y_min, x_max, y_max = get_bounding_box(rotated_mask)
-#     # cropped = rotated[y_min : y_max + 1, x_min : x_max + 1]
-#     masked = np.copy(rotated)
-#     masked[rotated_mask == 0] = np.array([0, 0, 0])
-#     if show_image:
-#         show_image(masked, gray=True)
-#     return masked
-
-
 # Created by ChatGPT
 def rectangularity_score(mask: np.ndarray):
     """
@@ -192,6 +168,14 @@ def rectangularity_score(mask: np.ndarray):
     # Compute the rectangularity score
     score = area / rect_area
     return score
+
+
+def dilate_and_erode(image, skip_dilation=False, iterations=1):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    if not skip_dilation:
+        image = cv2.dilate(image, kernel, iterations=iterations)
+    image = cv2.erode(image, kernel, iterations=iterations)
+    return image
 
 
 class Pitch:

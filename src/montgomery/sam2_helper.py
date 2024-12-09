@@ -176,10 +176,10 @@ def run_sam2(
     predictor = SAM2ImagePredictor(sam2_model)
     predictor.set_image(image)
 
-    print_verbose(
-        predictor._features["image_embed"].shape,
-        predictor._features["image_embed"][-1].shape,
-    )
+    # print_verbose(
+    #     predictor._features["image_embed"].shape,
+    #     predictor._features["image_embed"][-1].shape,
+    # )
 
     masks, scores, logits = predictor.predict(
         point_coords=input_point,
@@ -195,7 +195,8 @@ def run_sam2(
     mask_results = []
     for idx in range(len(masks)):
         if scores[idx] > min_score_threshold:
-            mask_results.append(SAM2MaskResult(masks[idx], scores[idx], logits[idx]))
+            mask = np.where(masks[idx] == 1, 255, 0)  # sam2 returns 0,1
+            mask_results.append(SAM2MaskResult(mask, scores[idx], logits[idx]))
 
     return mask_results
 

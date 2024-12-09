@@ -17,10 +17,12 @@ from .sam2_helper import SAM2MaskResult
 from .mediapipe_helper import HandResult, Handedness
 
 
-def run_canny_edge(image_rgb: np.ndarray, blur=False, show_image=False) -> np.ndarray:
+def run_canny_edge(
+    image_rgb: np.ndarray, skip_blur=False, show_image=False
+) -> np.ndarray:
     result = image_rgb.copy()
     result = cv2.cvtColor(result, cv2.COLOR_RGB2GRAY)
-    if blur:
+    if not skip_blur:
         result = cv2.GaussianBlur(result, (5, 5), 1.4)
     result = cv2.Canny(result, 100, 200)
 
@@ -122,7 +124,7 @@ def run_vismont(image_rgb, fretboard_mask_result: SAM2MaskResult):
     mask_rotated = fretboard_mask_result.rotate_ccw(angle_to_rotate_ccw)
     hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
-    canny = run_canny_edge(image_rotated_masked)
+    canny = run_canny_edge(image_rotated_masked, skip_blur=True)
 
     return VisMontResult(image_rgb, mask_rotated, canny, hand_rotated)
 
@@ -156,25 +158,31 @@ def run_fullmont(video_file, audio_file):
         pass
 
 
-def test_vismont():
-    # file = "./files/images/raw/guitar.png"
-    file = "./files/sweetchild/1.png"
+def test_vismont_on_one_image(file):
     image_bgr = Image.open(file)
     image_rgb = np.array(image_bgr.convert("RGB"))
+    # helper.show_image(image_rgb)
 
-    # input_point = np.array([[1600, 200]])
-    # input_point = np.array([[2670, 558]])
-    input_point = np.array([[630, 160]])
+    # input_point = np.array([[1600, 200]])  # images/raw/guitar.png
+    # input_point = np.array([[2670, 558]])  # sweetchild/screenshot.png
+    input_point = np.array([[1200, 230]])  # sweetchild/1.png
     input_label = np.array([1])
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
         image_rgb, input_point, input_label, show_all_masks=False
     )
-    vismont = run_vismont(image_rgb, fretboard_mask_result, show_result=True)
-    vismont.plot_canny_and_fingertips()
+    vismont = run_vismont(image_rgb, fretboard_mask_result)
+    # vismont.plot_canny_and_fingertips(exclude_thumb=True)
+
+    for _ in range(3):
+        vismont.canny = helper.dilate_and_erode(vismont.canny)
+        vismont.plot_canny_and_fingertips(exclude_thumb=True)
+
+    return vismont
 
 
 if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
+    test_vismont_on_one_image("./files/sweetchild/1.png")
 
     video_file = "files/sweetchild/video.mp4"
     audio_file = "files/sweetchild/audio.mp3"
