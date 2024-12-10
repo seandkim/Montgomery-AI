@@ -172,10 +172,10 @@ def test_vismont_on_one_image(file):
     )
     vismont = run_vismont(image_rgb, fretboard_mask_result)
     # vismont.plot_canny_and_fingertips(exclude_thumb=True)
+    # image = cv2.cvtColor(vismont.image, cv2.COLOR_RGB2GRAY)[vismont.mask]
     lines = helper.run_hough_line(vismont.mask)
-
-    vertical_lines = [line for line in lines if line.is_vertical()]
-    helper.show_image_with_lines(vismont.mask, vertical_lines, gray=True)
+    vertical_lines = [line for line in lines if helper.is_vertical(line)]
+    helper.show_image_with_lines(vismont.canny, vertical_lines, gray=True)
 
     for _ in range(3):
         vismont.canny = helper.dilate_and_erode(vismont.canny)

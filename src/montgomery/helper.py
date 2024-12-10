@@ -79,7 +79,7 @@ def show_image_with_lines(
     else:
         plt.imshow(image)
 
-    for line in lines[:20]:
+    for line in lines:
         x1, y1, x2, y2 = line
         plt.plot([x1, x2], [y1, y2], "r-", markersize=1)
     plt.axis("on")
@@ -200,7 +200,7 @@ def run_hough_line(image_binary):
         image_binary,
         rho=1,
         theta=np.pi / 180,
-        threshold=1,
+        threshold=2,
         minLineLength=1,  # Adjust based on fret length in image
         maxLineGap=100,  # Adjust tolerance for gaps in a line
     )
@@ -210,6 +210,7 @@ def run_hough_line(image_binary):
         lines = lines[:, 0, :]  # reshape to (N,4)
     else:
         lines = np.empty((0, 4), dtype=np.float32)
+    print_verbose(f"run_hough_line detected {len(lines)} lines")
     return lines
 
 
