@@ -73,20 +73,20 @@ def test_benmark(y: np.ndarray, sample_rate: float):
 def run_crepe(
     file: str,
     shift_by_half_note: int = 0,
-    model_capacity: str = "medium",
-    offset_seconds: int = 0,
-    duration_seconds: int = 5,
+    model_capacity: str = "medium",  # 'tiny', 'small', 'medium', 'large', or 'full'
+    offset: int = 0,
+    duration: int = 5,
     confidence_threshold: float = 0.7,
 ) -> List[AudioPitchInfo]:
     y, sample_rate = librosa.load(
-        file, sr=16000, offset=offset_seconds, duration=duration_seconds
+        file, sr=16000, offset=offset, duration=duration
     )  # crepe works best with 16k
     start_time = time.time()
     timestamps, frequencies, confidences, activation = crepe.predict(
         y, sample_rate, model_capacity=model_capacity
     )
     print_verbose(
-        f"CREPE finished: capacity={model_capacity}, total_audio_length={duration_seconds}, duration={time.time() - start_time:.2f}s"
+        f"CREPE finished: capacity={model_capacity}, total_audio_length={duration}, duration={time.time() - start_time:.2f}s"
     )
 
     mask = confidences > confidence_threshold

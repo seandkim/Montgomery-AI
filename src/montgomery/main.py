@@ -1,3 +1,4 @@
+import json
 import cv2
 import numpy as np
 import os
@@ -57,13 +58,13 @@ def select_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2Mask
 def get_fretboard_mask_result(
     image_rgb: np.ndarray,
     input_point: np.ndarray,
-    input_label: np.ndarray,
     show_all_masks=False,
     ignore_not_found=False,
 ) -> SAM2MaskResult:
     device = helper.setup_torch_device()
+    input_label = np.array([1])
     mask_results = sam2_helper.run_sam2(device, image_rgb, input_point, input_label)
-    if ignore_not_found and (mask_results is None or len(mask_results) == 0):
+    if not ignore_not_found and (mask_results is None or len(mask_results) == 0):
         raise RuntimeError("Mask results not found")
     if show_all_masks:
         for mask_result in mask_results:
@@ -119,8 +120,70 @@ class VisMontResult:
         helper.show_image_with_point(self.canny, self.hand.tips(indices), title=title)
 
 
+class MontInputs:
+    def __init__(
+        self,
+        sam_input_point: np.ndarray,  # e.g. [100, 200]
+        crepe_model: str,
+        crepe_duration: float,
+        crepe_offset: float,
+        vertical_sum_height: int,
+        vertical_sum_distance: int,
+        vertical_sum_prominence: int,
+    ):
+        if any(
+            arg is None
+            for arg in [
+                sam_input_point,
+                crepe_model,
+                crepe_duration,
+                crepe_offset,
+                vertical_sum_height,
+                vertical_sum_distance,
+                vertical_sum_prominence,
+            ]
+        ):
+            raise ValueError("MontInputs got null argument")
+
+        self.sam_input_point = sam_input_point
+        self.crepe_model = crepe_model
+        self.crepe_duration = crepe_duration
+        self.crepe_offset = crepe_offset
+        self.vertical_sum_height = vertical_sum_height
+        self.vertical_sum_distance = vertical_sum_distance
+        self.vertical_sum_prominence = vertical_sum_prominence
+
+    @staticmethod
+    def load_from_json_file(json_file):
+        with open(json_file, "r") as f:
+            data = json.load(f)
+
+        sam = data.get("sam", {})
+        sam_input_point = sam.get("input_point", None)
+        crepe = data.get("crepe", {})
+        crepe_model = crepe.get("model", None)
+        crepe_duration = crepe.get("duration", None)
+        crepe_offset = crepe.get("offset", None)
+        vertical_sum = data.get("vertical_sum", {})
+        vertical_sum_height = vertical_sum.get("height", None)
+        vertical_sum_distance = vertical_sum.get("distance", None)
+        vertical_sum_prominence = vertical_sum.get("prominence", None)
+        return MontInputs(
+            sam_input_point,
+            crepe_model,
+            crepe_duration,
+            crepe_offset,
+            vertical_sum_height,
+            vertical_sum_distance,
+            vertical_sum_prominence,
+        )
+
+
 def run_vismont(
-    image_rgb, fretboard_mask_result: SAM2MaskResult, show_image: bool = False
+    image_rgb,
+    fretboard_mask_result: SAM2MaskResult,
+    mont_inputs: MontInputs,
+    show_image: bool = False,
 ):
     hand_result: HandResult = get_hand_result(image_rgb)
 
@@ -135,27 +198,38 @@ def run_vismont(
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
     canny = run_canny_edge(image_rotated_masked, skip_blur=True)
     peaks_vertical = helper.find_vertical_sum_peaks(
-        canny, height=500, distance=15, prominence=1000, show_image=show_image
+        canny,
+        height=mont_inputs.vertical_sum_height,
+        distance=mont_inputs.vertical_sum_distance,
+        prominence=mont_inputs.vertical_sum_prominence,
+        show_image=show_image,
     )
     return VisMontResult(
         image_rgb, mask_rotated.mask, canny, peaks_vertical, hand_rotated
     )
 
 
-def run_fullmont(video_file, audio_file, show_image: bool = False):
+def run_fullmont(
+    video_file: str, audio_file: str, mont_inputs: MontInputs, show_image: bool = False
+):
     video = VideoFileClip(video_file)
     audio_pitch_infos = crepe_helper.run_crepe(
-        audio_file, model_capacity="tiny", shift_by_half_note=1
+        audio_file,
+        model_capacity=mont_inputs.crepe_model,
+        duration=mont_inputs.crepe_duration,
+        offset=mont_inputs.crepe_offset,
+        shift_by_half_note=1,
     )
 
     print_verbose(f"Fullmont processing video/audio of {video.duration}s")
-    input_point = np.array([[630, 160]])
-    input_label = np.array([1])
+    input_point = np.array([mont_inputs.sam_input_point])
     frame = video.get_frame(audio_pitch_infos[0].timestamp)
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
-        frame, input_point, input_label, show_all_masks=False
+        frame, input_point, show_all_masks=False
     )
-    vismont_result = run_vismont(frame, fretboard_mask_result, show_image=show_image)
+    vismont_result = run_vismont(
+        frame, fretboard_mask_result, mont_inputs, show_image=show_image
+    )
     if show_image:
         vismont_result.plot_canny_and_fingertips(
             exclude_thumb=True,
@@ -173,7 +247,7 @@ def run_fullmont(video_file, audio_file, show_image: bool = False):
         )
         frame = video.get_frame(audio_pitch_info.timestamp)
         # helper.show_image(frame)
-        vismont_result = run_vismont(frame, fretboard_mask_result)
+        vismont_result = run_vismont(frame, fretboard_mask_result, mont_inputs)
         finger_indices = []
         for tip in vismont_result.hand.tips([1, 2, 3]):
             finger_idx = guitar1.get_fret_index(tip.x)
@@ -188,8 +262,6 @@ def run_fullmont(video_file, audio_file, show_image: bool = False):
                 )
                 predicted_tabs.append(tab)
 
-    tabs_as_str = guitar.tabs2string(predicted_tabs)
-    print_verbose(tabs_as_str)
     return predicted_tabs
 
 
@@ -222,8 +294,19 @@ if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
     # test_vismont_on_one_image("./files/sweetchild/1.png")
 
-    video_file = "files/sweetchild/video.mp4"
-    audio_file = "files/sweetchild/audio.mp3"
-    fullmont = run_fullmont(video_file, audio_file)
+    DIR = f"files/sweetchild"
+    video_file = f"{DIR}/video.mp4"
+    audio_file = f"{DIR}/audio.mp3"
+    mont_input_file = f"{DIR}/input.json"
+    mont_inputs = MontInputs.load_from_json_file(mont_input_file)
 
-    pass
+    predict_tabs = run_fullmont(video_file, audio_file, mont_inputs)
+
+    tabs_as_str = guitar.tabs2string(predict_tabs)
+    with open(f"{DIR}/predicted_tabs_{mont_inputs.crepe_model}.txt", "w") as f:
+        for tab in predict_tabs:
+            f.write(f"{tab}\n")
+    with open(f"{DIR}/predicted_tabs_{mont_inputs.crepe_model}_string.txt", "w") as f:
+        f.write(tabs_as_str)
+
+    print_verbose(tabs_as_str)
