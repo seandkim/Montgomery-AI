@@ -187,12 +187,18 @@ def rectangularity_score(mask: np.ndarray):
     return score
 
 
-def dilate_and_erode(image, skip_dilation=False, iterations=1):
+def dilate(image, iterations=1):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    if not skip_dilation:
-        image = cv2.dilate(image, kernel, iterations=iterations)
-    image = cv2.erode(image, kernel, iterations=iterations)
-    return image
+    return cv2.dilate(image, kernel, iterations=iterations)
+
+
+def erode(image, iterations=1):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    return cv2.erode(image, kernel, iterations=iterations)
+
+
+def dilate_and_erode(image, iterations=1):
+    return erode(image, dilate(image, iterations))
 
 
 def run_hough_line(image_binary):
