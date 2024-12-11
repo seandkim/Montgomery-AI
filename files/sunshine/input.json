@@ -4,9 +4,10 @@
         "input_point": [800, 320]
     }, 
     "crepe": {
-        "model": "tiny",
+        "model": "full",
         "duration": 9,
-        "offset": 133
+        "offset": 133,
+        "shift_by_half_note": 0
     },
     "vertical_sum": {
         "height": 500,

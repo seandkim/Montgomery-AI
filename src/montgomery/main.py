@@ -129,6 +129,7 @@ class MontInputs:
         crepe_model: str,
         crepe_duration: float,
         crepe_offset: float,
+        crepe_shift_by_half_note: int,
         vertical_sum_height: int,
         vertical_sum_distance: int,
         vertical_sum_prominence: int,
@@ -140,6 +141,7 @@ class MontInputs:
                 crepe_model,
                 crepe_duration,
                 crepe_offset,
+                crepe_shift_by_half_note,
                 vertical_sum_height,
                 vertical_sum_distance,
                 vertical_sum_prominence,
@@ -151,6 +153,7 @@ class MontInputs:
         self.crepe_model = crepe_model
         self.crepe_duration = crepe_duration
         self.crepe_offset = crepe_offset
+        self.crepe_shift_by_half_note = crepe_shift_by_half_note
         self.vertical_sum_height = vertical_sum_height
         self.vertical_sum_distance = vertical_sum_distance
         self.vertical_sum_prominence = vertical_sum_prominence
@@ -166,6 +169,7 @@ class MontInputs:
         crepe_model = crepe.get("model", None)
         crepe_duration = crepe.get("duration", None)
         crepe_offset = crepe.get("offset", None)
+        crepe_shift_by_half_note = crepe.get("shift_by_half_note", None)
         vertical_sum = data.get("vertical_sum", {})
         vertical_sum_height = vertical_sum.get("height", None)
         vertical_sum_distance = vertical_sum.get("distance", None)
@@ -175,6 +179,7 @@ class MontInputs:
             crepe_model,
             crepe_duration,
             crepe_offset,
+            crepe_shift_by_half_note,
             vertical_sum_height,
             vertical_sum_distance,
             vertical_sum_prominence,
@@ -222,7 +227,7 @@ def run_fullmont(
         model_capacity=mont_inputs.crepe_model,
         duration=mont_inputs.crepe_duration,
         offset=mont_inputs.crepe_offset,
-        shift_by_half_note=1,
+        shift_by_half_note=mont_inputs.crepe_shift_by_half_note,
     )
 
     print_verbose(

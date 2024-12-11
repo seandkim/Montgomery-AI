@@ -6,7 +6,8 @@
     "crepe": {
         "model": "tiny",
         "duration": 30,
-        "offset": 0
+        "offset": 0,
+        "shift_by_half_note": 1
     },
     "vertical_sum": {
         "height": 500,
