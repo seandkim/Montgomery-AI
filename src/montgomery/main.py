@@ -175,38 +175,13 @@ def test_vismont_on_one_image(file):
     )
     vismont = run_vismont(image_rgb, fretboard_mask_result)
     # vismont.plot_canny_and_fingertips(exclude_thumb=True)
-    # image = cv2.cvtColor(vismont.image, cv2.COLOR_RGB2GRAY)[vismont.mask]
     lines = helper.run_hough_line(vismont.canny)
     lines = [line for line in lines if helper.is_vertical(line)]
     helper.show_image_with_lines(vismont.canny, lines, gray=True)
-
-    edges = helper.dilate(vismont.canny)
-    column_sum = np.sum(edges, axis=0)  # shape: (width,)
-
-    from scipy.signal import find_peaks
-
-    # Normalize or just directly find peaks
-    # Peaks in column_sum correspond to vertical lines
-    peaks, properties = find_peaks(column_sum, height=20)  # Adjust height as needed
-
-    # 'peaks' now contains the x-coordinates of candidate fret lines
-    print("Found peaks at columns:", peaks)
-
-    # Optional: Visualize the projection and peaks
-    plt.figure(figsize=(10, 4))
-    plt.plot(column_sum, label="Column sum (edge intensity)")
-    plt.plot(peaks, column_sum[peaks], "x", label="Detected peaks")
-    plt.title("Vertical Projection of Edges and Detected Peaks")
-    plt.xlabel("Column Index (x-coordinate)")
-    plt.ylabel("Edge Sum")
-    plt.legend()
-    plt.show(block=True)
-
-    # Once you have 'peaks' as candidate fret line positions:
-    # Sort them (just to be sure) and these represent fret line x-coordinates.
-    fret_lines = np.sort(peaks)
-
-    print("Potential fret line x-coordinates:", fret_lines)
+    # edges = helper.dilate(vismont.canny)
+    peaks = helper.find_vertical_sum_peaks(
+        vismont.canny, height=1000, distance=25, prominence=500, show_image=True
+    )
 
     return vismont
 

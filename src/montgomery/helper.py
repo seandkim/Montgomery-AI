@@ -1,11 +1,12 @@
-import math
-from typing import List, Optional
 import cv2
+import math
 import os
 import torch
+from typing import List, Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 
 # region verbose
 VERBOSE = False
@@ -231,6 +232,32 @@ def is_vertical(line, tolerance=10):
     # Allow a small tolerance, say ±5°
     tolerance = tolerance * math.pi / 180
     return abs(angle - math.pi / 2) < tolerance
+
+
+def find_vertical_sum_peaks(
+    image: np.ndarray,
+    height: int = 1000,
+    distance: int = 25,
+    prominence: int = 500,
+    show_image: bool = False,
+):
+    column_sum = np.sum(image, axis=0)
+    peaks, properties = find_peaks(
+        column_sum, height=height, distance=distance, prominence=prominence
+    )
+    peaks = np.sort(peaks)
+    print_verbose("Found peaks at columns:", peaks)
+
+    if show_image:
+        plt.figure(figsize=(10, 4))
+        plt.plot(column_sum, label="Column sum (edge intensity)")
+        plt.plot(peaks, column_sum[peaks], "x", label="Detected peaks")
+        plt.title("Vertical Projection of Edges and Detected Peaks")
+        plt.xlabel("Column Index (x-coordinate)")
+        plt.ylabel("Edge Sum")
+        plt.legend()
+        plt.show(block=True)
+    return peaks
 
 
 class Pitch:
