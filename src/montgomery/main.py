@@ -15,7 +15,7 @@ from . import mediapipe_helper as mp_helper
 from . import crepe_helper
 
 from .guitar import GuitarTab, Guitar
-from .helper import print_verbose
+from .helper import Point, print_error, print_verbose
 from .sam2_helper import SAM2MaskResult
 from .mediapipe_helper import HandResult, Handedness
 
@@ -46,13 +46,14 @@ def run_canny_edge(
 
 
 def select_fretboard_mask_result(mask_results: List[SAM2MaskResult]) -> SAM2MaskResult:
-    best_mask_result, best_score = None, -1
-    for mask_result in mask_results:
+    best_idx, best_score = None, -1
+    for idx in range(len(mask_results)):
+        mask_result = mask_results[idx]
         score = helper.rectangularity_score(mask_result.mask)
-        # print_verbose(score)
         if score > best_score:
-            best_mask_result, best_score = mask_result, score
-    return best_mask_result
+            best_idx, best_score = idx, score
+    print_verbose(f"Selected fretboard mask: idx={idx}")
+    return mask_results[best_idx]
 
 
 def get_fretboard_mask_result(
@@ -83,13 +84,14 @@ def get_fretboard_mask_result(
 
 
 def get_hand_result(
-    image_rgb: np.ndarray, save_image=False, ignore_not_found=False
+    image_rgb: np.ndarray, ignore_not_found=False
 ) -> mp_helper.HandResult:
     min_confidence = 0.1
     with mp_helper.initialize_mp_hands(min_confidence=min_confidence) as hands:
         hand_results = mp_helper.run_mp_hands(hands, image_rgb)
-        if ignore_not_found and (hand_results is None or len(hand_results) == 0):
-            raise RuntimeError("Hand results not found")
+        if not ignore_not_found and (hand_results is None or len(hand_results) == 0):
+            print_error(f"Hand could not be detected")
+            raise RuntimeError("Hand could not be detected")
 
         for hand_result in hand_results:
             if hand_result.handedness == Handedness.LEFT:
@@ -184,8 +186,10 @@ def run_vismont(
     fretboard_mask_result: SAM2MaskResult,
     mont_inputs: MontInputs,
     show_image: bool = False,
-):
+) -> Optional[VisMontResult]:
     hand_result: HandResult = get_hand_result(image_rgb)
+    if hand_result == None:
+        return None
 
     angle_to_rotate_ccw = fretboard_mask_result.get_angle_from_positive_x_axis() - 90
     image_rotated = helper.rotate_ccw(
@@ -221,23 +225,30 @@ def run_fullmont(
         shift_by_half_note=1,
     )
 
-    print_verbose(f"Fullmont processing video/audio of {video.duration}s")
-    input_point = np.array([mont_inputs.sam_input_point])
+    print_verbose(
+        f"Fullmont processing video/audio: offset: {mont_inputs.crepe_offset}s, duration: {mont_inputs.crepe_duration}s, total_duration={video.duration}"
+    )
     frame = video.get_frame(audio_pitch_infos[0].timestamp)
+    if show_image:
+        helper.show_image_with_point(
+            frame, [Point.from_coordinates(mont_inputs.sam_input_point)]
+        )
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
-        frame, input_point, show_all_masks=False
+        frame, np.array([mont_inputs.sam_input_point]), show_all_masks=show_image
     )
     vismont_result = run_vismont(
         frame, fretboard_mask_result, mont_inputs, show_image=show_image
     )
     if show_image:
-        vismont_result.plot_canny_and_fingertips(
-            exclude_thumb=True,
-            title=audio_pitch_info.to_simple_string(),
-        )
+        vismont_result.plot_canny_and_fingertips(exclude_thumb=True)
 
     guitar1 = Guitar(vismont_result.peaks_vertical)
-    # helper.show_image_with_vertical_lines(vismont_result.canny, guitar1.fret_positions)
+    if show_image:
+        helper.show_image_with_vertical_lines(
+            vismont_result.canny,
+            guitar1.fret_positions,
+            "Final guitar fretboard positions",
+        )
 
     predicted_tabs = []
     for audio_pitch_info in audio_pitch_infos:
@@ -248,19 +259,24 @@ def run_fullmont(
         frame = video.get_frame(audio_pitch_info.timestamp)
         # helper.show_image(frame)
         vismont_result = run_vismont(frame, fretboard_mask_result, mont_inputs)
-        finger_indices = []
-        for tip in vismont_result.hand.tips([1, 2, 3]):
-            finger_idx = guitar1.get_fret_index(tip.x)
-            finger_indices.append(finger_idx)
+        if vismont_result == None:
+            print_error("Hand was not detected")
+            predicted_tabs.append(None)
 
-        print_verbose(possible_tabs, finger_indices)
+        else:
+            finger_indices = []
+            for tip in vismont_result.hand.tips([1, 2, 3]):
+                finger_idx = guitar1.get_fret_index(tip.x)
+                finger_indices.append(finger_idx)
 
-        for tab in possible_tabs:
-            if tab.fret_index in finger_indices:
-                print_verbose(
-                    f"Selected tab. pitch={audio_pitch_info.pitch}, tab={tab}"
-                )
-                predicted_tabs.append(tab)
+            print_verbose(possible_tabs, finger_indices)
+
+            for tab in possible_tabs:
+                if tab.fret_index in finger_indices:
+                    print_verbose(
+                        f"Selected tab. pitch={audio_pitch_info.pitch}, tab={tab}"
+                    )
+                    predicted_tabs.append(tab)
 
     return predicted_tabs
 
@@ -294,13 +310,13 @@ if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
     # test_vismont_on_one_image("./files/sweetchild/1.png")
 
-    DIR = f"files/sweetchild"
+    DIR = f"files/sunshine"
     video_file = f"{DIR}/video.mp4"
     audio_file = f"{DIR}/audio.mp3"
     mont_input_file = f"{DIR}/input.json"
     mont_inputs = MontInputs.load_from_json_file(mont_input_file)
 
-    predict_tabs = run_fullmont(video_file, audio_file, mont_inputs)
+    predict_tabs = run_fullmont(video_file, audio_file, mont_inputs, show_image=True)
 
     tabs_as_str = guitar.tabs2string(predict_tabs)
     with open(f"{DIR}/predicted_tabs_{mont_inputs.crepe_model}.txt", "w") as f:

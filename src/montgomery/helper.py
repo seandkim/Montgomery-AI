@@ -12,6 +12,13 @@ from scipy.signal import find_peaks
 VERBOSE = False
 
 
+def print_error(*args, **kwargs):
+    RED = "\033[31m"
+    RESET = "\033[0m"
+    message = " ".join(map(str, args))
+    print(f"{RED}{message}{RESET}", **kwargs)
+
+
 def print_verbose(*args, **kwargs):
     if VERBOSE:
         GREEN = "\033[32m"
@@ -28,10 +35,25 @@ if VERBOSE is not None and VERBOSE.lower() == "true":
 
 
 class Point:
-    def __init__(self, x: float, y: float, z: float):
+    def __init__(self, x: float, y: float, z: float = None):
         self.x = x
         self.y = y
         self.z = z
+
+    def to_coordinates(self) -> np.ndarray:
+        coordinates = [self.x, self.y]
+        if self.z != None:
+            coordinates.append(self.z)
+        return np.array(coordinates)
+
+    @staticmethod
+    def from_coordinates(coordinates: List[float]):
+        if len(coordinates) == 2:
+            return Point(coordinates[0], coordinates[1])
+        elif len(coordinates) == 3:
+            return Point(coordinates[0], coordinates[1], coordinates[2])
+        else:
+            raise ValueError("Coordinate must be of length 2 or 3")
 
     def rotate_ccw(self, angle_in_degree, cx, cy):
         d = -math.radians(angle_in_degree)
@@ -88,7 +110,9 @@ def show_image_with_lines(
     plt.show(block=True)
 
 
-def show_image_with_vertical_lines(image: np.ndarray, vertical_lines_x: List[int]):
+def show_image_with_vertical_lines(
+    image: np.ndarray, vertical_lines_x: List[int], title: str = ""
+):
     plt.figure(figsize=(10, 10))
     plt.imshow(image, cmap="gray")
 
@@ -96,6 +120,7 @@ def show_image_with_vertical_lines(image: np.ndarray, vertical_lines_x: List[int
         plt.axvline(x=x, color="r", linestyle="--")
 
     plt.axis("on")
+    plt.title(title)
     plt.show(block=True)
 
 

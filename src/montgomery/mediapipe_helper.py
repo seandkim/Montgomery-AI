@@ -101,23 +101,21 @@ def run_mp_hands(
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = hands.process(image)
 
-    # Print handedness and draw hand landmarks on the image.
-    # print_verbose("Handedness:", results.multi_handedness)
     if not results.multi_hand_landmarks:
         return None
 
     mp_hand_result = []
     for idx in range(len(results.multi_handedness)):
-        if VERBOSE:
-            hand_landmarks = results.multi_hand_landmarks[idx]
-            image_height, image_width, _ = image.shape
-            # print_verbose("hand_landmarks:", hand_landmarks)
-            # print_verbose(
-            #     f"Index finger tip coordinates: (",
-            #     f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, "
-            #     f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})",
-            # )
+        # if VERBOSE:
+        #     hand_landmarks = results.multi_hand_landmarks[idx]
+        #     print_verbose("hand_landmarks:", hand_landmarks)
+        #     print_verbose(
+        #         f"Index finger tip coordinates: (",
+        #         f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, "
+        #         f"{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})",
+        #     )
 
+        image_height, image_width, _ = image.shape
         mp_hand_result.append(
             HandResult.from_mediapipe_result(
                 results.multi_handedness[idx].classification[0],

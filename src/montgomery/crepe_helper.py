@@ -99,7 +99,7 @@ def run_crepe(
         duration = timestamps[idx + 1] - timestamp
         pitch_infos.append(
             AudioPitchInfo(
-                timestamp,
+                offset + timestamp,
                 duration,
                 frequencies[idx],
                 confidences[idx],

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from montgomery.helper import print_verbose
 
@@ -75,12 +75,14 @@ class GuitarTab:
         return possible
 
 
-def tabs2string(tabs: List[GuitarTab]):
+def tabs2string(tabs: List[Optional[GuitarTab]]):
     positions_per_string = [[f"{s.note_name} "] for s in GuitarTab.BASE_STRINGS]
     positions_per_string[-1][0] = positions_per_string[-1][0].lower()
     for tab in tabs:
         for string_idx in range(len(GuitarTab.BASE_STRINGS)):
-            if string_idx == tab.string_index:
+            if tab == None:
+                positions_per_string[string_idx].append("??")
+            elif string_idx == tab.string_index:
                 fret_index = str(tab.fret_index)
                 if (len(fret_index)) == 1:
                     fret_index = f"-{fret_index}"
