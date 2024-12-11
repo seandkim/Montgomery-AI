@@ -23,8 +23,12 @@ def run_canny_edge(
     result = image_rgb.copy()
     result = cv2.cvtColor(result, cv2.COLOR_RGB2GRAY)
     if not skip_blur:
-        result = cv2.GaussianBlur(result, (5, 5), 1.4)
+        sigma = 1.4  # Example sigma value
+        kernel_size = int(6 * sigma + 1)  # Common choice to cover Gaussian distribution
+        result = cv2.GaussianBlur(image_rgb, (kernel_size, kernel_size), sigmaX=sigma)
+        # result = cv2.GaussianBlur(result, (5, 5), 1.4)
     result = cv2.Canny(result, 100, 200)
+    # result = cv2.dilate(result, None, iterations=1)
 
     if show_image:
         plt.subplot(121), plt.imshow(image_rgb, cmap="gray")
@@ -124,7 +128,7 @@ def run_vismont(image_rgb, fretboard_mask_result: SAM2MaskResult):
     mask_rotated = fretboard_mask_result.rotate_ccw(angle_to_rotate_ccw)
     hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
-    canny = run_canny_edge(image_rotated_masked, skip_blur=True)
+    canny = run_canny_edge(image_rotated_masked, skip_blur=False)
 
     return VisMontResult(image_rgb, mask_rotated.mask, canny, hand_rotated)
 
@@ -173,9 +177,9 @@ def test_vismont_on_one_image(file):
     vismont = run_vismont(image_rgb, fretboard_mask_result)
     # vismont.plot_canny_and_fingertips(exclude_thumb=True)
     # image = cv2.cvtColor(vismont.image, cv2.COLOR_RGB2GRAY)[vismont.mask]
-    lines = helper.run_hough_line(vismont.mask)
-    vertical_lines = [line for line in lines if helper.is_vertical(line)]
-    helper.show_image_with_lines(vismont.canny, vertical_lines, gray=True)
+    lines = helper.run_hough_line(vismont.canny)
+    lines = [line for line in lines if helper.is_vertical(line)]
+    helper.show_image_with_lines(vismont.canny, lines, gray=True)
 
     for _ in range(3):
         vismont.canny = helper.dilate_and_erode(vismont.canny)

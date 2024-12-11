@@ -200,7 +200,7 @@ def run_hough_line(image_binary):
         image_binary,
         rho=1,
         theta=np.pi / 180,
-        threshold=2,
+        threshold=50,
         minLineLength=1,  # Adjust based on fret length in image
         maxLineGap=100,  # Adjust tolerance for gaps in a line
     )
