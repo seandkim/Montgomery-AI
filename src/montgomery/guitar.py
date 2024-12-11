@@ -1,5 +1,7 @@
 from typing import List
 
+from montgomery.helper import print_verbose
+
 
 class Pitch:
     NOTE_NAME_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -86,14 +88,42 @@ def tabs2string(tabs: List[GuitarTab]):
             else:
                 positions_per_string[string_idx].append("--")
 
-    return "\n".join(["--".join(positions) for positions in positions_per_string])
+    return "\n".join(
+        ["--".join(positions) for positions in reversed(positions_per_string)]
+    )
 
 
 class Guitar:
     def __init__(self, fret_positions: List[int]):
-        self.fret_positions: List[int] = list(
-            reversed(sorted(fret_positions))
-        )  # right is 0th
+        self.fret_positions = Guitar.initialize_fret_position(fret_positions)
+
+    @staticmethod
+    def initialize_fret_position(fret_positions: List[int]) -> List[int]:
+        fret_positions = list(reversed(sorted(fret_positions)))  # right is 0th fret
+        if len(fret_positions) < 2:
+            return fret_positions
+
+        print_verbose(
+            f"Guitar adjusting fret positions: fret_positions={fret_positions}"
+        )
+        adjusted_positions = [fret_positions[0], fret_positions[1]]
+        for idx in range(2, len(fret_positions)):
+            interval = adjusted_positions[-2] - adjusted_positions[-1]
+            next_interval = adjusted_positions[-1] - fret_positions[idx]
+            if next_interval < (2 / 3) * interval:
+                print_verbose(
+                    f"removing element: idx={idx}, value={fret_positions[idx]}"
+                )
+                continue
+
+            elif next_interval > (4 / 3) * interval:
+                new_element = adjusted_positions[-1] - interval / 2
+                adjusted_positions.append(new_element)
+                print_verbose(f"adding extra element: idx={idx}, value={new_element}")
+
+            adjusted_positions.append(fret_positions[idx])
+
+        return adjusted_positions
 
     def __repr__(self):
         return f"Guitar(fret_positions={self.fret_positions})"
@@ -103,7 +133,7 @@ class Guitar:
             fret = self.fret_positions[i]
             if i > 0:
                 if x_coordinate > fret:
-                    return i - 1
+                    return i
 
         return None
 
