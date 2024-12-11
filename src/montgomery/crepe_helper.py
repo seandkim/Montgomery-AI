@@ -5,7 +5,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-from .helper import Pitch, print_verbose
+from .guitar import Pitch
+from .helper import print_verbose
 
 
 class AudioPitchInfo:

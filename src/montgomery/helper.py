@@ -72,7 +72,7 @@ def show_image_with_point(
 
 
 def show_image_with_lines(
-    image: np.array, lines: List[List[int]], title: str = "", gray=False
+    image: np.ndarray, lines: List[List[int]], title: str = "", gray=False
 ):
     plt.figure(figsize=(10, 10))
     if gray:
@@ -85,6 +85,17 @@ def show_image_with_lines(
         plt.plot([x1, x2], [y1, y2], "r-", markersize=1)
     plt.axis("on")
     plt.title(title)
+    plt.show(block=True)
+
+
+def show_image_with_vertical_lines(image: np.ndarray, vertical_lines_x: List[int]):
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image, cmap="gray")
+
+    for x in vertical_lines_x:
+        plt.axvline(x=x, color="r", linestyle="--")
+
+    plt.axis("on")
     plt.show(block=True)
 
 
@@ -242,116 +253,69 @@ def find_vertical_sum_peaks(
     show_image: bool = False,
 ):
     column_sum = np.sum(image, axis=0)
+
     peaks, properties = find_peaks(
         column_sum, height=height, distance=distance, prominence=prominence
     )
+
+    # Filter out peaks that are outside the core fretboard part
+    valid_peaks = []
+    neighbors_sum_threshold = 10000
+    neighbor_window = 5
+    for peak in peaks:
+        left_bound = max(0, peak - neighbor_window)
+        right_bound = min(len(column_sum) - 1, peak + neighbor_window)
+        if peak - neighbor_window < 0:
+            right_bound = peak + (neighbor_window * 2 - peak)
+        elif peak + neighbor_window > len(column_sum) - 1:
+            left_bound = peak - (neighbor_window * 2 - (len(column_sum) - peak - 1))
+        neighbors_sum = sum(column_sum[left_bound:right_bound])
+        # print_verbose(f"Peak at {peak}: neighboring sum is {neighbors_sum}")
+        if neighbors_sum > neighbors_sum_threshold:
+            valid_peaks.append(peak)
+        else:
+            print_verbose(
+                f"Remove peak at {peak} since the neighboring sum is {neighbors_sum} < {neighbors_sum_threshold}"
+            )
+    peaks = np.array(valid_peaks)
+
     peaks = np.sort(peaks)
     print_verbose("Found peaks at columns:", peaks)
 
     if show_image:
-        plt.figure(figsize=(10, 4))
-        plt.plot(column_sum, label="Column sum (edge intensity)")
-        plt.plot(peaks, column_sum[peaks], "x", label="Detected peaks")
-        plt.title("Vertical Projection of Edges and Detected Peaks")
-        plt.xlabel("Column Index (x-coordinate)")
-        plt.ylabel("Edge Sum")
-        plt.legend()
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+
+        ax1.plot(column_sum, label="Column sum (edge intensity)")
+        ax1.plot(peaks, column_sum[peaks], "x", label="Detected peaks")
+        ax1.set_title("Vertical Projection of Edges and Detected Peaks")
+        ax1.set_xlabel("Column Index (x-coordinate)")
+        ax1.set_ylabel("Edge Sum")
+        ax1.legend()
+
+        ax2.imshow(image, cmap="gray")
+        for x in peaks:
+            ax2.axvline(x=x, color="r", linestyle="--")
+        ax2.set_title("Image with Detected Peaks")
+        ax2.axis("on")
+
+        plt.tight_layout()
         plt.show(block=True)
+
+        # plt.figure(figsize=(10, 4))
+        # plt.plot(column_sum, label="Column sum (edge intensity)")
+        # plt.plot(peaks, column_sum[peaks], "x", label="Detected peaks")
+        # plt.title("Vertical Projection of Edges and Detected Peaks")
+        # plt.xlabel("Column Index (x-coordinate)")
+        # plt.ylabel("Edge Sum")
+        # plt.legend()
+        # plt.show(block=True)
+
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(image, cmap="gray")
+
+        # for x in peaks:
+        #     plt.axvline(x=x, color="r", linestyle="--")
+
+        # plt.axis("on")
+        # plt.show(block=True)
     return peaks
-
-
-class Pitch:
-    NOTE_NAME_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-
-    def __init__(self, note_name: str, octave: int):
-        self.note_name = note_name
-        self.octave = octave
-
-    def __init__(self, as_str: str):
-        if len(as_str) < 2 or len(as_str) > 3:
-            raise ValueError(f"Invalid pitch string: {as_str}")
-
-        as_str = as_str.replace("\u266F", "#")  # "♯" symbol
-        if as_str[:-1].upper() not in Pitch.NOTE_NAME_ORDER:
-            raise ValueError(f"Invalid note name: {as_str[:-1]}")
-        self.note_name = as_str[:-1].upper()
-        if not as_str[-1].isdigit() or int(as_str[-1]) < 0:
-            raise ValueError(f"Invalid octave: {as_str[-1]}")
-        self.octave = int(as_str[-1])
-
-    def __repr__(self):
-        return f"{self.note_name}{self.octave}"
-
-    def to_int(self) -> int:
-        return Pitch.NOTE_NAME_ORDER.index(self.note_name) + 12 * (self.octave)
-
-    def __eq__(self, other: "Pitch") -> bool:
-        return self.to_int() == other.to_int()
-
-    def __lt__(self, other: "Pitch") -> bool:
-        return self.to_int() < other.to_int()
-
-    def __le__(self, other: "Pitch") -> bool:
-        return self.to_int() <= other.to_int()
-
-    def __gt__(self, other: "Pitch") -> bool:
-        return self.to_int() > other.to_int()
-
-    def __ge__(self, other: "Pitch") -> bool:
-        return self.to_int() >= other.to_int()
-
-    def subtract(self, other: "Pitch") -> int:
-        return self.to_int() - other.to_int()
-
-
-class GuitarTab:
-    MAX_FRET_INDEX = 24
-    BASE_STRINGS = [
-        Pitch("E2"),
-        Pitch("A2"),
-        Pitch("D3"),
-        Pitch("G3"),
-        Pitch("B3"),
-        Pitch("E4"),
-    ]
-
-    def __init__(self, string_index: int, fret_index: int):
-        self.string_index = string_index
-        self.fret_index = fret_index
-
-    def __repr__(self):
-        return f"{GuitarTab.BASE_STRINGS[self.string_index]}: {self.fret_index}"
-
-    def possible_tabs(pitch: Pitch):
-        possible = []
-        for idx, base in enumerate(GuitarTab.BASE_STRINGS):
-            diff = pitch.subtract(base)
-            if 0 < diff and diff <= GuitarTab.MAX_FRET_INDEX:
-                possible.append(GuitarTab(idx, diff))
-        return possible
-
-
-def tabs2string(tabs: List[GuitarTab]):
-    positions_per_string = [[f"{s.note_name} "] for s in GuitarTab.BASE_STRINGS]
-    positions_per_string[-1][0] = positions_per_string[-1][0].lower()
-    for tab in tabs:
-        for string_idx in range(len(GuitarTab.BASE_STRINGS)):
-            if string_idx == tab.string_index:
-                fret_index = str(tab.fret_index)
-                if (len(fret_index)) == 1:
-                    fret_index = f"-{fret_index}"
-                positions_per_string[string_idx].append(fret_index)
-            else:
-                positions_per_string[string_idx].append("--")
-
-    return "\n".join(["--".join(positions) for positions in positions_per_string])
-
-
-def test_tabs2string():
-    tabs = [GuitarTab(2, 12), GuitarTab(4, 15), GuitarTab(3, 14), GuitarTab(3, 12)]
-    print(tabs2string(tabs))
-
-
-if __name__ == "__main__":
-    test_tabs2string()
-    print(GuitarTab.possible_tabs(Pitch("E3")))

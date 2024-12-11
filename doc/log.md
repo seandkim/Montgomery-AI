@@ -11,17 +11,26 @@
 - Colab: masks. Find rectangular mask?
 
 ## 6th
+
 - PCA to crop and rotate the image based on mask
 - canny edge: had to skip blurring because fret bar would not be detected
 
 ## 7th
+
 - rotating hand coordinate was a pain... => create your own class
 
-
 ## 8th
+
 - librosa: lots of noise, overtone
 - multiple notes at the same time is tough
 - crepe: cnn solution
+
+## 9th
+
+- 0th fret is hard to catch
+- hard thing is we don't know which strings being played
+- piano might be easier (z-index to detect if keys are pressed)
+
 
 ```shell
 Benchmark test for processing mp3 audio for 10 seconds

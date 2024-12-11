@@ -12,7 +12,8 @@ from . import sam2_helper
 from . import mediapipe_helper as mp_helper
 from . import crepe_helper
 
-from .helper import GuitarTab, print_verbose
+from .guitar import GuitarTab, Guitar
+from .helper import print_verbose
 from .sam2_helper import SAM2MaskResult
 from .mediapipe_helper import HandResult, Handedness
 
@@ -101,11 +102,13 @@ class VisMontResult:
         image: np.ndarray,
         mask: np.ndarray,
         canny: np.ndarray,
+        peaks_vertical: np.ndarray,
         hand: HandResult,
     ):
         self.image = image
         self.mask = mask
         self.canny = canny
+        self.peaks_vertical = peaks_vertical
         self.hand = hand
 
     def plot_canny_and_fingertips(self, exclude_thumb=False, title=""):
@@ -128,8 +131,13 @@ def run_vismont(image_rgb, fretboard_mask_result: SAM2MaskResult):
     hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
     canny = run_canny_edge(image_rotated_masked, skip_blur=True)
+    peaks_vertical = helper.find_vertical_sum_peaks(
+        canny, height=500, distance=15, prominence=1000, show_image=True
+    )
 
-    return VisMontResult(image_rgb, mask_rotated.mask, canny, hand_rotated)
+    return VisMontResult(
+        image_rgb, mask_rotated.mask, canny, peaks_vertical, hand_rotated
+    )
 
 
 def run_fullmont(video_file, audio_file):
@@ -145,6 +153,8 @@ def run_fullmont(video_file, audio_file):
     fretboard_mask_result: SAM2MaskResult = get_fretboard_mask_result(
         frame, input_point, input_label, show_all_masks=False
     )
+    vismont_result = run_vismont(frame, fretboard_mask_result)
+    guitar = Guitar(vismont_result.peaks_vertical)
 
     for audio_pitch_info in audio_pitch_infos:
         possible_tabs = GuitarTab.possible_tabs(audio_pitch_info.pitch)
@@ -152,8 +162,19 @@ def run_fullmont(video_file, audio_file):
             f"Fullmont processing: {audio_pitch_info} / Options: {possible_tabs})"
         )
         frame = video.get_frame(audio_pitch_info.timestamp)
-        helper.show_image(frame)
+        # helper.show_image(frame)
         vismont_result = run_vismont(frame, fretboard_mask_result)
+        # helper.show_image_with_vertical_lines(
+        #     vismont_result.canny, vismont_result.peaks_vertical
+        # )
+
+        finger_indices = []
+        for tip in vismont_result.hand.tips([1, 2, 3]):
+            finger_idx = guitar.get_fret_index(tip.x)
+            finger_indices.append(finger_idx)
+
+        print(possible_tabs, finger_indices)
+
         vismont_result.plot_canny_and_fingertips(
             exclude_thumb=True,
             title=audio_pitch_info.to_simple_string(),
@@ -177,18 +198,18 @@ def test_vismont_on_one_image(file):
     # vismont.plot_canny_and_fingertips(exclude_thumb=True)
     lines = helper.run_hough_line(vismont.canny)
     lines = [line for line in lines if helper.is_vertical(line)]
-    helper.show_image_with_lines(vismont.canny, lines, gray=True)
+    # helper.show_image_with_lines(vismont.canny, lines, gray=True)
     # edges = helper.dilate(vismont.canny)
-    peaks = helper.find_vertical_sum_peaks(
-        vismont.canny, height=1000, distance=25, prominence=500, show_image=True
+    peaks_vertical = helper.find_vertical_sum_peaks(
+        vismont.canny, height=2000, distance=25, prominence=500, show_image=True
     )
-
+    helper.show_image_with_vertical_lines(vismont.canny, peaks_vertical)
     return vismont
 
 
 if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
-    test_vismont_on_one_image("./files/sweetchild/1.png")
+    # test_vismont_on_one_image("./files/sweetchild/1.png")
 
     video_file = "files/sweetchild/video.mp4"
     audio_file = "files/sweetchild/audio.mp3"
