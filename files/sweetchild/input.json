@@ -4,8 +4,8 @@
         "input_point": [630, 160]
     }, 
     "crepe": {
-        "model": "tiny",
-        "duration": 30,
+        "model": "full",
+        "duration": 18,
         "offset": 0,
         "shift_by_half_note": 1
     },

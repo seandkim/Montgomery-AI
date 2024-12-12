@@ -5,7 +5,7 @@
     }, 
     "crepe": {
         "model": "full",
-        "duration": 9,
+        "duration": 10,
         "offset": 133,
         "shift_by_half_note": 0
     },

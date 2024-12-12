@@ -315,13 +315,13 @@ if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
     # test_vismont_on_one_image("./files/sweetchild/1.png")
 
-    DIR = f"files/sunshine"
+    DIR = f"files/sweetchild"
     video_file = f"{DIR}/video.mp4"
     audio_file = f"{DIR}/audio.mp3"
     mont_input_file = f"{DIR}/input.json"
     mont_inputs = MontInputs.load_from_json_file(mont_input_file)
 
-    predict_tabs = run_fullmont(video_file, audio_file, mont_inputs, show_image=True)
+    predict_tabs = run_fullmont(video_file, audio_file, mont_inputs, show_image=False)
 
     tabs_as_str = guitar.tabs2string(predict_tabs)
     with open(f"{DIR}/predicted_tabs_{mont_inputs.crepe_model}.txt", "w") as f:
