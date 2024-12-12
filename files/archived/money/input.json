@@ -1,0 +1,17 @@
+{
+    "link": "https://www.youtube.com/watch?v=HTPdlYOSywo",
+    "sam": {
+        "input_point": [840, 275]
+    }, 
+    "crepe": {
+        "model": "full",
+        "duration": 21,
+        "offset": 218,
+        "shift_by_half_note": 0
+    },
+    "vertical_sum": {
+        "height": 1000,
+        "distance": 15,
+        "prominence": 2000
+    }
+}

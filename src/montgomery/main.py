@@ -318,7 +318,7 @@ if __name__ == "__main__":
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"  # TODO: needed?
     # test_vismont_on_one_image("./files/sweetchild/1.png")
 
-    DIR = f"files/sweetchild"
+    DIR = f"files/cantstop"
     video_file = f"{DIR}/video.mp4"
     audio_file = f"{DIR}/audio.mp3"
     mont_input_file = f"{DIR}/input.json"

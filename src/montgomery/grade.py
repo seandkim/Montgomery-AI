@@ -68,7 +68,7 @@ def test_calculate_score():
 if __name__ == "__main__":
     # test_calculate_score()
 
-    OUT_DIR = "files/sweetchild"
+    OUT_DIR = "files/cantstop"
     expected_file = f"{OUT_DIR}/answer.txt"
     expected = read_tabs_from_file(expected_file)
 
