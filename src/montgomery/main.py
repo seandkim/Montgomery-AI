@@ -205,6 +205,9 @@ def run_vismont(
     mask_rotated = fretboard_mask_result.rotate_ccw(angle_to_rotate_ccw)
     hand_rotated = hand_result.rotate_ccw(angle_to_rotate_ccw)
     image_rotated_masked = mask_rotated.apply_to_image(image_rotated)
+    # if show_image:
+    #     helper.show_image(fretboard_mask_result.apply_to_image(image_rgb))
+    #     helper.show_image(image_rotated_masked)
     canny = run_canny_edge(image_rotated_masked, skip_blur=True)
     peaks_vertical = helper.find_vertical_sum_peaks(
         canny,
@@ -305,7 +308,7 @@ def test_vismont_on_one_image(file):
     # helper.show_image_with_lines(vismont.canny, lines, gray=True)
     # edges = helper.dilate(vismont.canny)
     peaks_vertical = helper.find_vertical_sum_peaks(
-        vismont.canny, height=2000, distance=25, prominence=500, show_image=True
+        vismont.canny, height=2000, distance=25, prominence=500, show_image=False
     )
     helper.show_image_with_vertical_lines(vismont.canny, peaks_vertical)
     return vismont

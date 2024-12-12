@@ -68,7 +68,7 @@ def test_calculate_score():
 if __name__ == "__main__":
     # test_calculate_score()
 
-    OUT_DIR = "files/sunshine"
+    OUT_DIR = "files/sweetchild"
     expected_file = f"{OUT_DIR}/answer.txt"
     expected = read_tabs_from_file(expected_file)
 
@@ -83,5 +83,5 @@ if __name__ == "__main__":
         scores[actual_file] = score
 
     output_data = {"scores": scores}
-    with open("grade.json", "w") as json_file:
+    with open(f"{OUT_DIR}/grade.json", "w") as json_file:
         json.dump(output_data, json_file, indent=4)

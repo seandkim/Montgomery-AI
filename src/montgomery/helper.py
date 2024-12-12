@@ -212,10 +212,8 @@ def rectangularity_score(mask: np.ndarray):
     area = cv2.contourArea(cnt)
     if area == 0:
         return 0.0
-    # Compute the minimum area bounding rectangle
-    rect = cv2.minAreaRect(cnt)  # rect = ((cx, cy), (width, height), angle)
+    rect = cv2.minAreaRect(cnt)
     (width, height) = rect[1]
-    # If width or height is zero, shape can't be formed
     if width == 0 or height == 0:
         return 0.0
     rect_area = width * height

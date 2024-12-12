@@ -9,11 +9,9 @@ duration_seconds = 5
 y, sr = librosa.load(
     audio_path, sr=16000, duration=duration_seconds
 )  # CREPE works best with 16kHz
-
-# Perform pitch prediction
 time, frequency, confidence, activation = crepe.predict(
-    y, sr, model_capacity="tiny"
-)  # Options: 'tiny', 'small', 'medium', 'large', 'full'
+    y, sr, model_capacity="medium"  # 'tiny', 'small', 'medium', 'large', 'full'
+)
 
 # Filter predictions based on confidence
 confidence_threshold = 0.5
