@@ -5,7 +5,7 @@
       "name": "Python: Module",
       "type": "debugpy",
       "request": "launch",
-      "module": "montgomery.main",
+      "module": "montgomery.grade",
       //"module": "playground.hed",
       "justMyCode": false,
       "env": {

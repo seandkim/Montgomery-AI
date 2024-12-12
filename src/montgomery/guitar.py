@@ -29,6 +29,8 @@ class Pitch:
         return Pitch.NOTE_NAME_ORDER.index(self.note_name) + 12 * (self.octave)
 
     def __eq__(self, other: "Pitch") -> bool:
+        if not isinstance(other, Pitch):
+            return False
         return self.to_int() == other.to_int()
 
     def __lt__(self, other: "Pitch") -> bool:
@@ -64,6 +66,17 @@ class GuitarTab:
 
     def __repr__(self):
         return f"{GuitarTab.BASE_STRINGS[self.string_index]}: {self.fret_index}"
+
+    def __eq__(self, other: "GuitarTab") -> bool:
+        if not isinstance(other, GuitarTab):
+            return False
+        return (
+            self.string_index == other.string_index
+            and self.fret_index == other.fret_index
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.string_index, self.fret_index))
 
     @staticmethod
     def possible_tabs(pitch: Pitch) -> List["GuitarTab"]:
