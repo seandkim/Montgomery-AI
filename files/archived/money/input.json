@@ -1,12 +1,12 @@
 {
-    "link": "https://www.youtube.com/watch?v=HTPdlYOSywo",
+    "link": "https://www.youtube.com/watch?v=Hw2q4baHS54",
     "sam": {
-        "input_point": [840, 275]
+        "input_point": [800, 200]
     }, 
     "crepe": {
-        "model": "full",
-        "duration": 21,
-        "offset": 218,
+        "model": "tiny",
+        "duration": 15,
+        "offset": 1,
         "shift_by_half_note": 0
     },
     "vertical_sum": {

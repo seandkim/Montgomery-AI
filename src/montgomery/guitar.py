@@ -131,13 +131,14 @@ class Guitar:
                 )
                 continue
 
-            elif next_interval > (4 / 3) * interval:
-                new_element = adjusted_positions[-1] - interval / 2
-                adjusted_positions.append(new_element)
-                print_verbose(f"adding extra element: idx={idx}, value={new_element}")
+            # elif next_interval > (4 / 3) * interval:
+            #     new_element = adjusted_positions[-1] - interval / 2
+            #     adjusted_positions.append(new_element)
+            #     print_verbose(f"adding extra element: idx={idx}, value={new_element}")
             elif next_interval > interval * 1.1:
                 # adjust the fret if it's too far. Use previous interval
-                adjusted_positions.append(adjusted_positions[-1] - interval)
+                new_element = int(adjusted_positions[-1] - interval * 0.9)
+                adjusted_positions.append(new_element)
             else:
                 adjusted_positions.append(fret_positions[idx])
 

@@ -68,12 +68,12 @@ def test_calculate_score():
 if __name__ == "__main__":
     # test_calculate_score()
 
-    OUT_DIR = "files/cantstop"
+    OUT_DIR = "files/satisfaction"
     expected_file = f"{OUT_DIR}/answer.txt"
     expected = read_tabs_from_file(expected_file)
 
     scores = dict()
-    actual_files = [f"{OUT_DIR}/predicted_tabs_full.txt", f"{OUT_DIR}/chatgpt.txt"]
+    actual_files = [f"{OUT_DIR}/predicted_tabs_tiny.txt", f"{OUT_DIR}/chatgpt.txt"]
     for actual_file in actual_files:
         actual = read_tabs_from_file(actual_file)
         score = calculate_score(expected, actual)
