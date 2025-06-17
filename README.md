@@ -1,11 +1,16 @@
-# Montgomery
+# Montgomery AI: Automatic Guitar Transcription
+
+Montgomery AI is a tool that converts guitar performance videos into tablature (tab) scores. Using AI technologies like Facebook's Segment Anything and Google's MediaPipe, it analyzes video and audio to identify which notes are being played. This project combines computer vision and audio processing to simplify guitar transcription.
+
+![Overview of Methods](doc/images/methods.png)
 
 ## Setup
 
-1. Download Segment Anything 2.1
-2. Download MediaPipe
-3. `conda activate montgomery`
-4. `python -m montgomery.main`
+1. Download [Segment Anything 2.1](https://github.com/facebookresearch/sam2)
+2. Download [MediaPipe](https://github.com/google-ai-edge/mediapipe)
+3. Navigate to root folder.
+4. `conda activate montgomery`
+5. `python -m montgomery.main`
 
 ## To Run
 
@@ -18,21 +23,11 @@
 - torch=2.5.1
 - numpy=1.26.4
 
-conda create -n montgomery python=3.12 numpy=1.26.4 matplotlib pytorch=2.5.1 torchvision torchaudio -c pytorch
-
-## References
-
-- [Facebook SAM2](https://github.com/facebookresearch/sam2)
-
-### Python help
-
-Modules
-- https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#src-layout
-- https://github.com/pypa/setuptools/issues/4248
+These can be downloaded via `conda create -n montgomery python=3.12 numpy=1.26.4 matplotlib pytorch=2.5.1 torchvision torchaudio -c pytorch`
 
 ## Baseline
 
-- ChatGPT: "How do you play the intro riff for "Sunshine of your love" by Cream? Give me the tab score"
+The result of the program was compared to ChatGPT. The following query was used: "How do you play the intro riff for "______" by _____? Give me the tab score"
 
 ## Test videos
 
