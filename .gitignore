@@ -11,4 +11,5 @@ src/models/*
 *.mp3
 *.mp4
 
-doc/
+/doc/*
+!/doc/images/
